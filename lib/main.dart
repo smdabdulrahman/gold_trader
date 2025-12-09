@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:goldtrader/helpers/DatabaseHelper.dart';
 import 'package:goldtrader/helpers/FileHelper.dart';
+import 'package:goldtrader/helpers/SalesDbHelper.dart';
 import 'package:goldtrader/helpers/TranslateHelper.dart';
 
 import 'package:goldtrader/splash_screen.dart';
@@ -22,7 +23,7 @@ void main() async {
   await DatabaseHelper.instance.initDb();
   await DatabaseHelper.instance.initializeCustomises();
   Filehelper.getPermissionAndCreateFolder();
-
+  Salesdbhelper.deleteLastWeekBeforeSalesDB();
   runApp(const MyApp());
 }
 

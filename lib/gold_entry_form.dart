@@ -3,6 +3,7 @@
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:goldtrader/bill_list.dart';
 import 'package:goldtrader/bill_view.dart';
 import 'package:goldtrader/helpers/CustomerDbHelper.dart';
 import 'package:goldtrader/helpers/DatabaseHelper.dart';
@@ -108,7 +109,18 @@ class _GoldEntryFormState extends State<GoldEntryForm> {
       appBar: AppBar(
         title: Text("Gold Trader"),
         actions: [
-          IconButton(icon: Icon(Icons.sell_outlined), onPressed: () {}),
+          IconButton(
+            icon: Icon(Icons.sell_outlined),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (builder) {
+                    return BillList();
+                  },
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: SafeArea(

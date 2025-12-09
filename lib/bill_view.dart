@@ -40,195 +40,6 @@ class _BillViewState extends State<BillView> {
     futureData = getAllData();
   }
 
-  Future<void> print80mmBill({
-    required Uint8List shopLogo,
-    required Map<String, dynamic> shopDetails,
-    required dynamic sale,
-    required DateTime salesDateTime,
-    required dynamic customer,
-    required List<dynamic> soldProducts,
-    required List<dynamic> oldProducts,
-    required double totalAmount,
-    required double totalGstAmount,
-    required double totalFinalAmount,
-    required Uint8List poweredByLogo,
-    required Map<int, dynamic> products,
-  }) async {
-    final profile = await CapabilityProfile.load();
-    final generator = Generator(PaperSize.mm80, profile); // 80mm printer
-
-    List<int> bytes = [];
-
-    // ---------------- SHOP LOGO & DETAILS ----------------
-    bytes += generator.image(img.decodeImage(shopLogo)!);
-    bytes += generator.text(
-      shopDetails["shop_name"],
-      styles: PosStyles(
-        align: PosAlign.center,
-        height: PosTextSize.size2,
-        width: PosTextSize.size2,
-        bold: true,
-      ),
-    );
-    bytes += generator.text(
-      "${shopDetails["addr_line1"]}, ${shopDetails["addr_line2"]}",
-      styles: PosStyles(align: PosAlign.center),
-    );
-    bytes += generator.text(
-      "Mobile: ${shopDetails["mobile_num"]}",
-      styles: PosStyles(align: PosAlign.center),
-    );
-    bytes += generator.hr();
-
-    // ---------------- BILL + CUSTOMER ----------------
-    bytes += generator.row([
-      PosColumn(
-        text:
-            "Bill: ${sale.id}\nDate: ${salesDateTime.toString().substring(0, 11)}\nTime: ${salesDateTime.hour}:${salesDateTime.minute}:${salesDateTime.second}",
-        width: 6,
-        styles: PosStyles(align: PosAlign.left),
-      ),
-      PosColumn(
-        text:
-            "Cust: ${customer.name}\nPhone: ${customer.phone_no}\nPlace: ${customer.place}",
-        width: 6,
-        styles: PosStyles(align: PosAlign.left),
-      ),
-    ]);
-    bytes += generator.hr();
-
-    // ---------------- PRODUCTS LIST ----------------
-    bytes += generator.row([
-      PosColumn(text: "Product", width: 4, styles: PosStyles(bold: true)),
-      PosColumn(
-        text: "Gram",
-        width: 2,
-        styles: PosStyles(bold: true, align: PosAlign.right),
-      ),
-      PosColumn(
-        text: "Fixed",
-        width: 3,
-        styles: PosStyles(bold: true, align: PosAlign.right),
-      ),
-      PosColumn(
-        text: "Total",
-        width: 3,
-        styles: PosStyles(bold: true, align: PosAlign.right),
-      ),
-    ]);
-
-    for (var p in soldProducts) {
-      bytes += generator.row([
-        PosColumn(
-          text:
-              "${products[p.product_id]["product_name"]}${products[p.product_id]["isGold"] == 1 ? " (G)" : " (S)"}",
-          width: 4,
-        ),
-        PosColumn(
-          text: "${p.gram.toStringAsFixed(2)}",
-          width: 2,
-          styles: PosStyles(align: PosAlign.right),
-        ),
-        PosColumn(
-          text: "${products[p.product_id]["fixed_price"].toStringAsFixed(2)}",
-          width: 3,
-          styles: PosStyles(align: PosAlign.right),
-        ),
-        PosColumn(
-          text: "${p.total_amount.toInt()}",
-          width: 3,
-          styles: PosStyles(align: PosAlign.right),
-        ),
-      ]);
-    }
-    bytes += generator.hr();
-
-    // ---------------- TOTALS ----------------
-    bytes += generator.row([
-      PosColumn(
-        text: "Total Amount\nGST Amount",
-        width: 6,
-        styles: PosStyles(align: PosAlign.left),
-      ),
-      PosColumn(
-        text: "Rs ${totalAmount}\nRs ${totalGstAmount}",
-        width: 6,
-        styles: PosStyles(align: PosAlign.right),
-      ),
-    ]);
-    bytes += generator.hr();
-
-    // ---------------- OLD PRODUCTS ----------------
-    bytes += generator.text("Old Gold & Silver", styles: PosStyles(bold: true));
-    bytes += generator.row([
-      PosColumn(text: "Product", width: 4, styles: PosStyles(bold: true)),
-      PosColumn(
-        text: "Gram",
-        width: 2,
-        styles: PosStyles(bold: true, align: PosAlign.right),
-      ),
-      PosColumn(
-        text: "Dust",
-        width: 3,
-        styles: PosStyles(bold: true, align: PosAlign.right),
-      ),
-      PosColumn(
-        text: "Total",
-        width: 3,
-        styles: PosStyles(bold: true, align: PosAlign.right),
-      ),
-    ]);
-
-    for (var p in oldProducts) {
-      bytes += generator.row([
-        PosColumn(
-          text: "${p.old_product_name}${p.isGold == 1 ? " (G)" : " (S)"}",
-          width: 4,
-        ),
-        PosColumn(
-          text: "${p.gram.toStringAsFixed(2)}",
-          width: 2,
-          styles: PosStyles(align: PosAlign.right),
-        ),
-        PosColumn(
-          text: "${p.dust.toStringAsFixed(2)}",
-          width: 3,
-          styles: PosStyles(align: PosAlign.right),
-        ),
-        PosColumn(
-          text: "${p.final_amount.toInt()}",
-          width: 3,
-          styles: PosStyles(align: PosAlign.right),
-        ),
-      ]);
-    }
-    bytes += generator.hr();
-
-    // ---------------- GRAND TOTAL ----------------
-    bytes += generator.text(
-      "GRAND TOTAL: Rs ${sale.final_amount - sale.old_amount}",
-      styles: PosStyles(
-        align: PosAlign.center,
-        width: PosTextSize.size2,
-        height: PosTextSize.size2,
-        bold: true,
-      ),
-    );
-    bytes += generator.text(
-      "*** Thank You ***",
-      styles: PosStyles(align: PosAlign.center),
-    );
-
-    // Powered by logo
-    bytes += generator.image(img.decodeImage(poweredByLogo)!);
-
-    // ---------------- CUT ----------------
-    bytes += generator.cut();
-
-    // ---------------- SEND TO PRINTER ----------------
-    //  PrintHelper.check(bytes);
-  }
-
   Future<Map<String, dynamic>> getAllData() async {
     print("heloo");
     //get shop details
@@ -743,14 +554,14 @@ class _BillViewState extends State<BillView> {
                   pw.Text(
                     "TOTAL",
                     style: pw.TextStyle(
-                      fontSize: 13,
+                      fontSize: 18,
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
                   pw.Text(
                     "₹${f.format(sale.final_amount - sale.old_amount)}",
                     style: pw.TextStyle(
-                      fontSize: 13,
+                      fontSize: 18,
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
@@ -767,7 +578,7 @@ class _BillViewState extends State<BillView> {
                   mainAxisAlignment: pw.MainAxisAlignment.center,
                   children: [
                     pw.Text("Powered by ", style: pw.TextStyle(fontSize: 12)),
-                    pw.Image(buyp_logo, width: 30),
+                    pw.Text("BUYP", style: pw.TextStyle(fontSize: 12)),
                   ],
                 ),
               ),
@@ -776,11 +587,31 @@ class _BillViewState extends State<BillView> {
         },
       ),
     );
+    final weekDays = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thrusday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ];
+    String weekDay = weekDays[DateTime.parse(sale.date_time).weekday - 1];
+    Directory file_dir = Directory(
+      Filehelper.dir.path +
+          "/" +
+          weekDay +
+          "_" +
+          sale.date_time.substring(0, 10),
+    );
+    if (!file_dir.existsSync()) file_dir.createSync();
+
     var pdfFile = File(
-      Filehelper.dir.path + "/bill_no_" + widget.sale_id.toString() + ".pdf",
+      file_dir.path + "/bill_no_" + widget.sale_id.toString() + ".pdf",
     );
 
     pdfFile.writeAsBytesSync(await pdf.save());
+
     print("file saved");
   }
 
@@ -916,7 +747,7 @@ class _BillViewState extends State<BillView> {
                     Text("Mobile : " + shop_details["mobile_num"]),
                   ],
                 ),
-                Divider(color: Colors.black),
+                DottedLine(),
                 //bill detail and customer detail
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -954,7 +785,7 @@ class _BillViewState extends State<BillView> {
                     ),
                   ],
                 ),
-                Divider(color: Colors.black),
+                DottedLine(),
                 Column(
                   children: [
                     Row(
@@ -1024,8 +855,8 @@ class _BillViewState extends State<BillView> {
                                 width: MediaQuery.of(context).size.width * 0.25,
                                 child: Text(
                                   "₹" +
-                                      roundAndFormat(
-                                        sold_products[i].total_amount,
+                                      f.format(
+                                        sold_products[i].total_amount.toInt(),
                                       ),
                                 ),
                               ),
@@ -1111,7 +942,7 @@ class _BillViewState extends State<BillView> {
                       return Column(
                         spacing: 5,
                         children: [
-                          Divider(color: Colors.black),
+                          DottedLine(),
                           Row(
                             children: [
                               Container(
@@ -1179,24 +1010,11 @@ class _BillViewState extends State<BillView> {
                     ),
                   ],
                 ),
-                ElevatedButton(
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber,
+                  ),
                   onPressed: () async {
-                    /*       print80mmBill(
-                      shopLogo: shop_details["logo"],
-                      shopDetails: shop_details,
-                      sale: sale,
-                      salesDateTime: sales_date_time,
-                      customer: customer,
-                      soldProducts: sold_products,
-                      oldProducts: old_products,
-                      totalAmount: total_amount.toDouble(),
-                      totalGstAmount: total_gst_amount.toDouble(),
-                      totalFinalAmount: total_final_amount.toDouble(),
-                      poweredByLogo: (await rootBundle.load(
-                        "assets/images/buyp.png",
-                      )).buffer.asUint8List(),
-                      products: products,
-                    ); */
                     PrintHelper.print80mmBill(
                       File(
                         Filehelper.dir.path +
@@ -1205,6 +1023,7 @@ class _BillViewState extends State<BillView> {
                             ".pdf",
                       ),
                       shop_details["printer_name"],
+                      context,
                     );
                     saveAsPdf(
                       context,
@@ -1220,7 +1039,14 @@ class _BillViewState extends State<BillView> {
                       old_products,
                     );
                   },
-                  child: Text("Print"),
+                  icon: Icon(Icons.print, color: Colors.white),
+                  label: Text(
+                    "Print",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),

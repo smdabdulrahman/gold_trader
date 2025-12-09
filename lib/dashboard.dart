@@ -21,7 +21,16 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
-  late Future<List<String>> futureDashboardStr;
+  List<String> ls = [
+    "Welcome",
+    "Settings",
+    "Gold Price",
+    "Gold Entry Form",
+    "Shop Details",
+  ];
+  late Future<List<String>> futureDashboardStr = Translatehelper.translateList(
+    ls,
+  );
 
   final f = NumberFormat.decimalPattern('en_IN');
   String roundAndFormat(double n) {
@@ -36,14 +45,7 @@ class _DashboardState extends State<Dashboard> {
   @override
   void initState() {
     super.initState();
-    List<String> ls = [
-      "Welcome",
-      "Settings",
-      "Gold Price",
-      "Gold Entry Form",
-      "Shop Details",
-    ];
-    futureDashboardStr = Translatehelper.translateList(ls);
+
     DatabaseHelper.instance.queryShopDetails().then((res) {
       setState(() {
         shopData = res.first;
