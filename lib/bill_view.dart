@@ -1,0 +1,1232 @@
+// ignore_for_file: prefer_interpolation_to_compose_strings
+
+import 'dart:io';
+import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
+import 'package:image/image.dart' as img;
+import 'package:dotted_line/dotted_line.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:goldtrader/helpers/CustomerDbHelper.dart';
+import 'package:goldtrader/helpers/DatabaseHelper.dart';
+import 'package:goldtrader/helpers/OldProductDbHelper.dart';
+import 'package:goldtrader/helpers/PrintHelper.dart';
+import 'package:goldtrader/helpers/SalesDbHelper.dart';
+import 'package:goldtrader/helpers/SoldProductsDbHelper.dart';
+import 'package:goldtrader/model/Customer.dart';
+import 'package:goldtrader/model/OldProduct.dart';
+import 'package:goldtrader/model/Product.dart';
+import 'package:goldtrader/model/Sales.dart';
+import 'package:goldtrader/model/SoldProducts.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:share_plus/share_plus.dart';
+
+import 'helpers/FileHelper.dart';
+
+class BillView extends StatefulWidget {
+  const BillView({super.key, required this.sale_id});
+  final int sale_id;
+  @override
+  State<BillView> createState() => _BillViewState();
+}
+
+class _BillViewState extends State<BillView> {
+  late Future<Map<String, dynamic>> futureData;
+  @override
+  void initState() {
+    super.initState();
+    futureData = getAllData();
+  }
+
+  Future<void> print80mmBill({
+    required Uint8List shopLogo,
+    required Map<String, dynamic> shopDetails,
+    required dynamic sale,
+    required DateTime salesDateTime,
+    required dynamic customer,
+    required List<dynamic> soldProducts,
+    required List<dynamic> oldProducts,
+    required double totalAmount,
+    required double totalGstAmount,
+    required double totalFinalAmount,
+    required Uint8List poweredByLogo,
+    required Map<int, dynamic> products,
+  }) async {
+    final profile = await CapabilityProfile.load();
+    final generator = Generator(PaperSize.mm80, profile); // 80mm printer
+
+    List<int> bytes = [];
+
+    // ---------------- SHOP LOGO & DETAILS ----------------
+    bytes += generator.image(img.decodeImage(shopLogo)!);
+    bytes += generator.text(
+      shopDetails["shop_name"],
+      styles: PosStyles(
+        align: PosAlign.center,
+        height: PosTextSize.size2,
+        width: PosTextSize.size2,
+        bold: true,
+      ),
+    );
+    bytes += generator.text(
+      "${shopDetails["addr_line1"]}, ${shopDetails["addr_line2"]}",
+      styles: PosStyles(align: PosAlign.center),
+    );
+    bytes += generator.text(
+      "Mobile: ${shopDetails["mobile_num"]}",
+      styles: PosStyles(align: PosAlign.center),
+    );
+    bytes += generator.hr();
+
+    // ---------------- BILL + CUSTOMER ----------------
+    bytes += generator.row([
+      PosColumn(
+        text:
+            "Bill: ${sale.id}\nDate: ${salesDateTime.toString().substring(0, 11)}\nTime: ${salesDateTime.hour}:${salesDateTime.minute}:${salesDateTime.second}",
+        width: 6,
+        styles: PosStyles(align: PosAlign.left),
+      ),
+      PosColumn(
+        text:
+            "Cust: ${customer.name}\nPhone: ${customer.phone_no}\nPlace: ${customer.place}",
+        width: 6,
+        styles: PosStyles(align: PosAlign.left),
+      ),
+    ]);
+    bytes += generator.hr();
+
+    // ---------------- PRODUCTS LIST ----------------
+    bytes += generator.row([
+      PosColumn(text: "Product", width: 4, styles: PosStyles(bold: true)),
+      PosColumn(
+        text: "Gram",
+        width: 2,
+        styles: PosStyles(bold: true, align: PosAlign.right),
+      ),
+      PosColumn(
+        text: "Fixed",
+        width: 3,
+        styles: PosStyles(bold: true, align: PosAlign.right),
+      ),
+      PosColumn(
+        text: "Total",
+        width: 3,
+        styles: PosStyles(bold: true, align: PosAlign.right),
+      ),
+    ]);
+
+    for (var p in soldProducts) {
+      bytes += generator.row([
+        PosColumn(
+          text:
+              "${products[p.product_id]["product_name"]}${products[p.product_id]["isGold"] == 1 ? " (G)" : " (S)"}",
+          width: 4,
+        ),
+        PosColumn(
+          text: "${p.gram.toStringAsFixed(2)}",
+          width: 2,
+          styles: PosStyles(align: PosAlign.right),
+        ),
+        PosColumn(
+          text: "${products[p.product_id]["fixed_price"].toStringAsFixed(2)}",
+          width: 3,
+          styles: PosStyles(align: PosAlign.right),
+        ),
+        PosColumn(
+          text: "${p.total_amount.toInt()}",
+          width: 3,
+          styles: PosStyles(align: PosAlign.right),
+        ),
+      ]);
+    }
+    bytes += generator.hr();
+
+    // ---------------- TOTALS ----------------
+    bytes += generator.row([
+      PosColumn(
+        text: "Total Amount\nGST Amount",
+        width: 6,
+        styles: PosStyles(align: PosAlign.left),
+      ),
+      PosColumn(
+        text: "Rs ${totalAmount}\nRs ${totalGstAmount}",
+        width: 6,
+        styles: PosStyles(align: PosAlign.right),
+      ),
+    ]);
+    bytes += generator.hr();
+
+    // ---------------- OLD PRODUCTS ----------------
+    bytes += generator.text("Old Gold & Silver", styles: PosStyles(bold: true));
+    bytes += generator.row([
+      PosColumn(text: "Product", width: 4, styles: PosStyles(bold: true)),
+      PosColumn(
+        text: "Gram",
+        width: 2,
+        styles: PosStyles(bold: true, align: PosAlign.right),
+      ),
+      PosColumn(
+        text: "Dust",
+        width: 3,
+        styles: PosStyles(bold: true, align: PosAlign.right),
+      ),
+      PosColumn(
+        text: "Total",
+        width: 3,
+        styles: PosStyles(bold: true, align: PosAlign.right),
+      ),
+    ]);
+
+    for (var p in oldProducts) {
+      bytes += generator.row([
+        PosColumn(
+          text: "${p.old_product_name}${p.isGold == 1 ? " (G)" : " (S)"}",
+          width: 4,
+        ),
+        PosColumn(
+          text: "${p.gram.toStringAsFixed(2)}",
+          width: 2,
+          styles: PosStyles(align: PosAlign.right),
+        ),
+        PosColumn(
+          text: "${p.dust.toStringAsFixed(2)}",
+          width: 3,
+          styles: PosStyles(align: PosAlign.right),
+        ),
+        PosColumn(
+          text: "${p.final_amount.toInt()}",
+          width: 3,
+          styles: PosStyles(align: PosAlign.right),
+        ),
+      ]);
+    }
+    bytes += generator.hr();
+
+    // ---------------- GRAND TOTAL ----------------
+    bytes += generator.text(
+      "GRAND TOTAL: Rs ${sale.final_amount - sale.old_amount}",
+      styles: PosStyles(
+        align: PosAlign.center,
+        width: PosTextSize.size2,
+        height: PosTextSize.size2,
+        bold: true,
+      ),
+    );
+    bytes += generator.text(
+      "*** Thank You ***",
+      styles: PosStyles(align: PosAlign.center),
+    );
+
+    // Powered by logo
+    bytes += generator.image(img.decodeImage(poweredByLogo)!);
+
+    // ---------------- CUT ----------------
+    bytes += generator.cut();
+
+    // ---------------- SEND TO PRINTER ----------------
+    //  PrintHelper.check(bytes);
+  }
+
+  Future<Map<String, dynamic>> getAllData() async {
+    print("heloo");
+    //get shop details
+    Map<String, dynamic> shopData = (await DatabaseHelper.instance
+        .queryShopDetails())[0];
+
+    //get sales details
+    Sales sale = await Salesdbhelper.querySale(widget.sale_id);
+
+    //get customer details
+    Customer customer = await Customerdbhelper.queryCustomer(sale.customer_id);
+
+    //get sold products
+    List<SoldProducts> sold_products = await Soldproductsdbhelper.queryProducts(
+      sale.id!,
+    );
+    List<Map<String, dynamic>> products = await DatabaseHelper.instance
+        .queryProducts();
+    //get old sold products
+    List<OldProduct> old_products = await Oldproductdbhelper.queryOldProducts(
+      sale.id!,
+    );
+    print(customer.toMap());
+    print(sale.toMap());
+    print("Products length" + sold_products.length.toString());
+    print("old Products length" + old_products.length.toString());
+
+    return {
+      "shop_details": shopData,
+      "sales": sale,
+      "customer": customer,
+      "sold_products": sold_products,
+      "old_products": old_products,
+      "products": products,
+    };
+  }
+
+  String roundAndFormat(double n) {
+    double r = (n * 90).round() / 90; // 4 decimals → 2 decimals
+    return f.format(r); // Indian format
+  }
+
+  Uint8List convertToThermalBW(Uint8List originalBytes) {
+    // Decode
+    img.Image? image = img.decodeImage(originalBytes);
+    if (image == null) return originalBytes;
+
+    // Convert to grayscale
+    img.Image grayscale = img.grayscale(image);
+
+    // Increase contrast for thermal printing
+    img.Image contrasted = img.adjustColor(grayscale, contrast: 0.5);
+
+    // Encode back to PNG/JPG
+    return Uint8List.fromList(img.encodePng(contrasted));
+  }
+
+  Future<void> saveAsPdf(
+    BuildContext context,
+    Map<String, dynamic> shop_details,
+    Sales sale,
+    DateTime sales_date_time,
+    Customer customer,
+    List<SoldProducts> sold_products,
+    Map<int, dynamic> products,
+    int total_amount,
+    int total_gst_amount,
+    int total_final_amount,
+    List<OldProduct> old_products,
+  ) async {
+    final pdf = pw.Document();
+
+    final logo = pw.MemoryImage(convertToThermalBW(shop_details["logo"]));
+    final buyp_logo = pw.MemoryImage(
+      convertToThermalBW(
+        (await rootBundle.load("assets/images/buyp.png")).buffer.asUint8List(),
+      ),
+    );
+
+    // 📏 80mm thermal printer page format
+    final pageFormat = PdfPageFormat(80 * PdfPageFormat.mm, double.infinity);
+
+    final Poppins_base = pw.Font.ttf(
+      await rootBundle.load("assets/fonts/Poppins-Regular.ttf"),
+    );
+    final Poppins_bold = pw.Font.ttf(
+      await rootBundle.load("assets/fonts/Poppins-Bold.ttf"),
+    );
+    final Poppins_semibold = pw.Font.ttf(
+      await rootBundle.load("assets/fonts/Poppins-Medium.ttf"),
+    );
+    pdf.addPage(
+      pw.Page(
+        pageFormat: pageFormat,
+        theme: pw.ThemeData.withFont(
+          base: Poppins_semibold,
+          bold: Poppins_bold,
+        ),
+        margin: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 9),
+        build: (pw.Context context) {
+          pw.Container dotted_line() => pw.Container(
+            height: 1,
+            decoration: pw.BoxDecoration(
+              border: pw.Border(
+                bottom: pw.BorderSide(
+                  color: PdfColors.black,
+                  width: 1,
+                  style: pw.BorderStyle(pattern: [3, 3]), // 3 on, 3 off
+                ),
+              ),
+            ),
+          );
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // ---------------- SHOP DETAILS ----------------
+              pw.Center(
+                child: pw.Column(
+                  children: [
+                    pw.Image(logo, width: 50),
+                    pw.Text(
+                      shop_details["shop_name"],
+                      style: pw.TextStyle(
+                        fontSize: 14,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.Text(
+                      "${shop_details["addr_line1"]}, ${shop_details["addr_line2"]}",
+                      style: pw.TextStyle(fontSize: 9),
+                    ),
+                    pw.Text(
+                      "Mobile: ${shop_details["mobile_num"]}",
+                      style: pw.TextStyle(fontSize: 9),
+                    ),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 3),
+              dotted_line(),
+              pw.SizedBox(height: 3),
+              // ---------------- BILL + CUSTOMER DETAILS ----------------
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Container(
+                    width: 80,
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          "Bill: ${sale.id}",
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                        pw.Text(
+                          "Date: ${sales_date_time.toString().substring(0, 11)}",
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                        pw.Text(
+                          "Time: ${sales_date_time.hour}:${sales_date_time.minute}:${sales_date_time.second}",
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                      ],
+                    ),
+                  ),
+                  pw.Container(
+                    width: 100,
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          "Cust Name: ${customer.name}",
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                        pw.Text(
+                          "Phone: ${customer.phone_no}",
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                        pw.Text(
+                          "Place: ${customer.place}",
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              pw.SizedBox(height: 6),
+              dotted_line(),
+
+              // ---------------- PRODUCTS LIST ----------------
+              /*  pw.Text(
+                "Products",
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ), */
+              pw.SizedBox(height: 3),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.start,
+
+                children: [
+                  pw.Container(
+                    width: 70,
+                    alignment: pw.Alignment.centerLeft,
+                    child: pw.Text(
+                      "Product",
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 9,
+                      ),
+                    ),
+                  ),
+
+                  pw.Container(
+                    width: 40,
+                    alignment: pw.Alignment.centerRight,
+
+                    child: pw.Text(
+                      "Gram",
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 9,
+                      ),
+                    ),
+                  ),
+                  pw.Container(
+                    width: 50,
+
+                    alignment: pw.Alignment.centerRight,
+
+                    child: pw.Text(
+                      "Fixed",
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 9,
+                      ),
+                    ),
+                  ),
+
+                  pw.Container(
+                    width: 60,
+                    alignment: pw.Alignment.centerRight,
+                    child: pw.Text(
+                      "Total",
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 9,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 6),
+              dotted_line(),
+              ...sold_products.map((p) {
+                return pw.Column(
+                  children: [
+                    pw.SizedBox(height: 3),
+
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.start,
+                      children: [
+                        pw.Container(
+                          width: 70,
+                          alignment: pw.Alignment.centerLeft,
+                          child: pw.Text(
+                            products[p.product_id]["product_name"] +
+                                (products[p.product_id]["isGold"] == 1
+                                    ? " (G)"
+                                    : " (S)"),
+                            style: pw.TextStyle(fontSize: 9),
+                          ),
+                        ),
+
+                        pw.Container(
+                          width: 40,
+                          alignment: pw.Alignment.centerRight,
+
+                          child: pw.Text(
+                            "${p.gram.toStringAsFixed(2)}",
+                            style: pw.TextStyle(fontSize: 9),
+                          ),
+                        ),
+                        pw.Container(
+                          width: 50,
+                          alignment: pw.Alignment.centerRight,
+                          child: pw.Text(
+                            (products[p.product_id]["fixed_price"])
+                                .toStringAsFixed(2),
+                            style: pw.TextStyle(fontSize: 9),
+                          ),
+                        ),
+                        pw.Container(
+                          width: 60,
+                          alignment: pw.Alignment.centerRight,
+                          child: pw.Text(
+                            "${f.format(p.total_amount.toInt())}",
+                            style: pw.TextStyle(fontSize: 9),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              }),
+
+              pw.SizedBox(height: 6),
+              dotted_line(),
+              pw.SizedBox(height: 6),
+              // ---------------- TOTALS ----------------
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Container(
+                    width: 150,
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          "Total Amount",
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                        pw.SizedBox(height: 2),
+                        pw.Text("GST Amount", style: pw.TextStyle(fontSize: 9)),
+                      ],
+                    ),
+                  ),
+                  pw.Container(
+                    width: 50,
+                    alignment: pw.Alignment.centerRight,
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                      children: [
+                        pw.Text(
+                          "₹${f.format(total_amount)}",
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                        pw.SizedBox(height: 2),
+                        pw.Text(
+                          "₹${f.format(total_gst_amount)}",
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              pw.SizedBox(height: 6),
+              dotted_line(),
+              pw.SizedBox(height: 6),
+              // ---------------- OLD PRODUCTS ----------------
+              pw.Text(
+                "Old Gold & Silver",
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
+              ),
+              pw.SizedBox(height: 4),
+
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.start,
+                children: [
+                  pw.Container(
+                    width: 70,
+                    alignment: pw.Alignment.centerLeft,
+                    child: pw.Text(
+                      "Product",
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 9,
+                      ),
+                    ),
+                  ),
+
+                  pw.Container(
+                    width: 50,
+                    alignment: pw.Alignment.centerRight,
+                    child: pw.Text(
+                      "Gram",
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 9,
+                      ),
+                    ),
+                  ),
+                  pw.Container(
+                    width: 50,
+                    alignment: pw.Alignment.centerRight,
+                    child: pw.Text(
+                      "Dust",
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 9,
+                      ),
+                    ),
+                  ),
+                  pw.Container(
+                    width: 50,
+                    alignment: pw.Alignment.centerRight,
+                    child: pw.Text(
+                      "Total",
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 9,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 6),
+              dotted_line(),
+              ...old_products.map((p) {
+                return pw.Column(
+                  children: [
+                    pw.SizedBox(height: 3),
+
+                    pw.Row(
+                      children: [
+                        pw.Container(
+                          width: 70,
+                          alignment: pw.Alignment.centerLeft,
+                          child: pw.Text(
+                            p.old_product_name +
+                                (p.isGold == 1 ? "(G)" : "(S)"),
+                            style: pw.TextStyle(fontSize: 9),
+                          ),
+                        ),
+
+                        pw.Container(
+                          width: 50,
+                          alignment: pw.Alignment.centerRight,
+                          child: pw.Text(
+                            "${p.gram.toStringAsFixed(2)}",
+                            style: pw.TextStyle(fontSize: 9),
+                          ),
+                        ),
+                        pw.Container(
+                          width: 50,
+                          alignment: pw.Alignment.centerRight,
+                          child: pw.Text(
+                            (p.dust).toStringAsFixed(2),
+                            style: pw.TextStyle(fontSize: 9),
+                          ),
+                        ),
+                        pw.Container(
+                          width: 50,
+                          alignment: pw.Alignment.centerRight,
+                          child: pw.Text(
+                            "${f.format(p.final_amount.toInt())}",
+                            style: pw.TextStyle(fontSize: 9),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              }),
+
+              pw.SizedBox(height: 6),
+              dotted_line(),
+              pw.SizedBox(height: 6),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Container(
+                    width: 150,
+                    alignment: pw.Alignment.centerLeft,
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          "Final Amount",
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                        pw.Text(
+                          "Old Product Total",
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                      ],
+                    ),
+                  ),
+                  pw.Container(
+                    width: 50,
+                    alignment: pw.Alignment.centerRight,
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                      children: [
+                        pw.Text(
+                          "₹${f.format(total_final_amount)}",
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                        pw.Text(
+                          "₹${f.format(sale.old_amount)}",
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              pw.SizedBox(height: 6),
+              dotted_line(),
+              pw.SizedBox(height: 3),
+              // ---------------- GRAND TOTAL ----------------
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    "TOTAL",
+                    style: pw.TextStyle(
+                      fontSize: 13,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.Text(
+                    "₹${f.format(sale.final_amount - sale.old_amount)}",
+                    style: pw.TextStyle(
+                      fontSize: 13,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 3),
+              dotted_line(),
+              pw.SizedBox(height: 20),
+              pw.Center(child: pw.Text("*** Thank You ***")),
+              pw.SizedBox(height: 6),
+              pw.Center(
+                child: pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
+                  children: [
+                    pw.Text("Powered by ", style: pw.TextStyle(fontSize: 12)),
+                    pw.Image(buyp_logo, width: 30),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    var pdfFile = File(
+      Filehelper.dir.path + "/bill_no_" + widget.sale_id.toString() + ".pdf",
+    );
+
+    pdfFile.writeAsBytesSync(await pdf.save());
+    print("file saved");
+  }
+
+  String bill_path = "";
+  final f = NumberFormat.decimalPattern("en_IN");
+  @override
+  Widget build(BuildContext context) {
+    getAllData();
+    return Scaffold(
+      backgroundColor: Color(0xffffffff),
+      appBar: AppBar(
+        title: Text("Bill"),
+        actions: [
+          IconButton(
+            onPressed: () {
+              final params = ShareParams(
+                text: "Share Bill",
+                files: [
+                  XFile(
+                    Filehelper.dir.path +
+                        "/bill_no_" +
+                        widget.sale_id.toString() +
+                        ".pdf",
+                  ),
+                ],
+              );
+              SharePlus.instance.share(params);
+            },
+            icon: Icon(Icons.share),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: FutureBuilder(
+          future: futureData,
+          builder: (context, body) {
+            if (body.hasData) {
+              Map<String, dynamic> data = body.data!;
+              Map<String, dynamic> shop_details = data["shop_details"];
+              Sales sale = data["sales"];
+              Customer customer = data["customer"];
+              int total_gst_amount = 0;
+              int total_final_amount = 0;
+              int total_amount = 0;
+
+              List<OldProduct> old_products = data["old_products"];
+              List<Map<String, dynamic>> temp_products = data["products"];
+              Map<int, dynamic> products = {};
+              for (var product in temp_products) {
+                products[product["id"]] = product;
+              }
+              List<SoldProducts> sold_products = data["sold_products"];
+              for (var sold in sold_products) {
+                int gst_amount = ((sold.gst / 100) * sold.total_amount).toInt();
+                total_gst_amount += gst_amount;
+                total_amount += (sold.total_amount).toInt();
+              }
+              total_final_amount = total_amount + total_gst_amount;
+              DateTime sales_date_time = DateTime.parse(sale.date_time);
+
+              return billView(
+                context,
+                shop_details,
+                sale,
+                sales_date_time,
+                customer,
+                sold_products,
+                products,
+                total_amount,
+                total_gst_amount,
+                total_final_amount,
+                old_products,
+              );
+            }
+            return Center(child: Image.asset("assets/images/spinner.gif"));
+          },
+        ),
+      ),
+    );
+  }
+
+  Center billView(
+    BuildContext context,
+    Map<String, dynamic> shop_details,
+    Sales sale,
+    DateTime sales_date_time,
+    Customer customer,
+    List<SoldProducts> sold_products,
+    Map<int, dynamic> products,
+    int total_amount,
+    int total_gst_amount,
+    int total_final_amount,
+    List<OldProduct> old_products,
+  ) {
+    saveAsPdf(
+      context,
+      shop_details,
+      sale,
+      sales_date_time,
+      customer,
+      sold_products,
+      products,
+      total_amount,
+      total_gst_amount,
+      total_final_amount,
+      old_products,
+    );
+    return Center(
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.9,
+        child: Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              spacing: 9,
+              children: [
+                //shop details
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Image.memory(shop_details["logo"], width: 50),
+                    Text(
+                      shop_details["shop_name"],
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      shop_details["addr_line1"] +
+                          "," +
+                          shop_details["addr_line2"],
+                    ),
+                    Text("Mobile : " + shop_details["mobile_num"]),
+                  ],
+                ),
+                Divider(color: Colors.black),
+                //bill detail and customer detail
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Bill No : " + sale.id.toString()),
+                        Text(
+                          // ignore: prefer_interpolation_to_compose_strings
+                          "Date : " +
+                              (sales_date_time.day.toString()) +
+                              "-" +
+                              (sales_date_time.month.toString()) +
+                              "-" +
+                              (sales_date_time.year.toString()),
+                        ),
+                        Text(
+                          "Time : " +
+                              sales_date_time.hour.toString() +
+                              " : " +
+                              (sales_date_time.minute.toString()) +
+                              " : " +
+                              sales_date_time.second.toString(),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Name : " + customer.name),
+                        Text("Mobile : " + customer.phone_no.toString()),
+                        Text("Place : " + customer.place),
+                      ],
+                    ),
+                  ],
+                ),
+                Divider(color: Colors.black),
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.3,
+                          child: Text(
+                            "Product",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.2,
+                          child: Text(
+                            "Type",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.15,
+                          child: Text(
+                            "Gram",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.25,
+                          child: Text(
+                            "Total",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    ...List.generate(sold_products.length, (i) {
+                      return Column(
+                        spacing: 5,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: MediaQuery.of(context).size.width * 0.3,
+                                child: Text(
+                                  products[sold_products[i]
+                                      .product_id]["product_name"],
+                                ),
+                              ),
+
+                              Container(
+                                width: MediaQuery.of(context).size.width * 0.2,
+                                child: Text(
+                                  products[sold_products[i]
+                                              .product_id]["isGold"] ==
+                                          1
+                                      ? "Gold"
+                                      : "Silver",
+                                ),
+                              ),
+
+                              Container(
+                                width: MediaQuery.of(context).size.width * 0.15,
+                                child: Text(sold_products[i].gram.toString()),
+                              ),
+
+                              Container(
+                                width: MediaQuery.of(context).size.width * 0.25,
+                                child: Text(
+                                  "₹" +
+                                      roundAndFormat(
+                                        sold_products[i].total_amount,
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }),
+                  ],
+                ),
+                DottedLine(),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.65,
+                      child: Column(
+                        spacing: 8,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Total Amount"),
+                          Text("GST Amount"),
+                          Text("Final Amount"),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        spacing: 8,
+                        children: [
+                          Text("₹" + f.format(total_amount)),
+                          Text("₹" + f.format(total_gst_amount)),
+                          Text("₹" + f.format(total_final_amount)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                DottedLine(),
+
+                Column(
+                  spacing: 9,
+                  children: [
+                    Text(
+                      "Old Gold & Silver",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.3,
+                          child: Text(
+                            "Product",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.2,
+                          child: Text(
+                            "Type",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.2,
+                          child: Text(
+                            "Gram",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.2,
+                          child: Text(
+                            "Total",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    ...List.generate(old_products.length, (i) {
+                      return Column(
+                        spacing: 5,
+                        children: [
+                          Divider(color: Colors.black),
+                          Row(
+                            children: [
+                              Container(
+                                width: MediaQuery.of(context).size.width * 0.3,
+                                child: Text(old_products[i].old_product_name),
+                              ),
+
+                              Container(
+                                width: MediaQuery.of(context).size.width * 0.2,
+                                child: Text(
+                                  old_products[i].isGold == 1
+                                      ? "Gold"
+                                      : "Silver",
+                                ),
+                              ),
+
+                              Container(
+                                width: MediaQuery.of(context).size.width * 0.2,
+                                child: Text(old_products[i].gram.toString()),
+                              ),
+
+                              Container(
+                                width: MediaQuery.of(context).size.width * 0.2,
+                                child: Text(
+                                  "₹" + f.format(old_products[i].final_amount),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }),
+                  ],
+                ),
+                DottedLine(),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.7,
+                      child: Text("Old Product Total"),
+                    ),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.2,
+                      child: Text("₹" + f.format(sale.old_amount)),
+                    ),
+                  ],
+                ),
+                DottedLine(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Grand Total",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "₹" + f.format(sale.final_amount - sale.old_amount),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    /*       print80mmBill(
+                      shopLogo: shop_details["logo"],
+                      shopDetails: shop_details,
+                      sale: sale,
+                      salesDateTime: sales_date_time,
+                      customer: customer,
+                      soldProducts: sold_products,
+                      oldProducts: old_products,
+                      totalAmount: total_amount.toDouble(),
+                      totalGstAmount: total_gst_amount.toDouble(),
+                      totalFinalAmount: total_final_amount.toDouble(),
+                      poweredByLogo: (await rootBundle.load(
+                        "assets/images/buyp.png",
+                      )).buffer.asUint8List(),
+                      products: products,
+                    ); */
+                    PrintHelper.print80mmBill(
+                      File(
+                        Filehelper.dir.path +
+                            "/bill_no_" +
+                            widget.sale_id.toString() +
+                            ".pdf",
+                      ),
+                      shop_details["printer_name"],
+                    );
+                    saveAsPdf(
+                      context,
+                      shop_details,
+                      sale,
+                      sales_date_time,
+                      customer,
+                      sold_products,
+                      products,
+                      total_amount,
+                      total_gst_amount,
+                      total_final_amount,
+                      old_products,
+                    );
+                  },
+                  child: Text("Print"),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
