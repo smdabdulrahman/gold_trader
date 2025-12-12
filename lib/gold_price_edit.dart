@@ -46,7 +46,7 @@ class _GoldPriceEditState extends State<GoldPriceEdit> {
 
     return Scaffold(
       backgroundColor: Color(0xffffffff),
-      appBar: AppBar(),
+      appBar: AppBar(backgroundColor: Colors.amber[400]),
       body: SafeArea(
         child: Center(
           child: FutureBuilder(

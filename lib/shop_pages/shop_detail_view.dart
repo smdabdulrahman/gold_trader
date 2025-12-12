@@ -57,9 +57,13 @@ class _ShopDetailViewState extends State<ShopDetailView> {
     TextEditingController printer_name = TextEditingController(
       text: widget.shopData["printer_name"],
     );
-    fileBytes = widget.shopData["logo"];
+    if (fileBytes == null) fileBytes = widget.shopData["logo"];
     return Scaffold(
       backgroundColor: Color(0xffffffff),
+      appBar: AppBar(
+        backgroundColor: Colors.amber[400],
+        title: Text("Shop Details"),
+      ),
       body: SafeArea(
         child: FutureBuilder(
           future: futureTranslatedString,
@@ -102,9 +106,12 @@ class _ShopDetailViewState extends State<ShopDetailView> {
                         ), */
                         child: fileBytes == null
                             ? Icon(Icons.camera_alt_outlined, size: 70)
-                            : Image.memory(fileBytes!, width: 70),
+                            : ClipRRect(
+                                borderRadius: BorderRadiusGeometry.circular(5),
+                                child: Image.memory(fileBytes!, width: 70),
+                              ),
                       ),
-                      Text(body.data![0], style: TextStyle(fontSize: 30)),
+
                       Form(
                         key: _formKey,
                         child: Center(
@@ -175,9 +182,7 @@ class _ShopDetailViewState extends State<ShopDetailView> {
                                             color: Colors.amber,
                                           ),
                                         ),
-                                        prefixIcon: Icon(
-                                          Icons.edit_location_outlined,
-                                        ),
+
                                         isDense: true,
                                       ),
                                     ),

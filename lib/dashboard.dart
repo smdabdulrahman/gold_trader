@@ -1,14 +1,16 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:goldtrader/bill_view.dart';
-import 'package:goldtrader/gold_entry_form.dart';
+import 'package:goldtrader/get_rate.dart';
+import 'package:goldtrader/sales_pages/bill_view.dart';
+import 'package:goldtrader/sales_pages/gold_entry_form.dart';
 import 'package:goldtrader/helpers/DatabaseHelper.dart';
 import 'package:goldtrader/helpers/TranslateHelper.dart';
 import 'package:goldtrader/settings/select_language.dart';
 import 'package:goldtrader/gold_price_edit.dart';
 import 'package:goldtrader/settings.dart';
 import 'package:goldtrader/shop_pages/shop_detail_view.dart';
+import 'package:goldtrader/update_page.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -25,7 +27,7 @@ class _DashboardState extends State<Dashboard> {
     "Welcome",
     "Settings",
     "Gold Price",
-    "Gold Entry Form",
+    "Sale Entry",
     "Shop Details",
   ];
   late Future<List<String>> futureDashboardStr = Translatehelper.translateList(
@@ -45,7 +47,8 @@ class _DashboardState extends State<Dashboard> {
   @override
   void initState() {
     super.initState();
-
+    print("kk");
+    GetRate.goldAndSilver();
     DatabaseHelper.instance.queryShopDetails().then((res) {
       setState(() {
         shopData = res.first;
@@ -74,21 +77,26 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xffffffff),
+    return FutureBuilder(
+      future: futureDashboardStr,
+      builder: (context, body) {
+        if (body.hasData) {
+          return Scaffold(
+            backgroundColor: Color.fromARGB(246, 255, 255, 255),
 
-      body: SafeArea(
-        child: FutureBuilder(
-          future: futureDashboardStr,
-          builder: (context, body) {
-            if (body.hasData) {
-              return Container(
+            body: SafeArea(
+              child: Container(
                 child: Column(
                   spacing: 20,
                   children: [
                     if (shopData != null)
                       Padding(
-                        padding: const EdgeInsets.all(18.0),
+                        padding: const EdgeInsets.only(
+                          top: 18.0,
+                          left: 18,
+                          right: 18,
+                          bottom: 2,
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -104,7 +112,8 @@ class _DashboardState extends State<Dashboard> {
                               ],
                             ),
 
-                            ClipOval(
+                            ClipRRect(
+                              borderRadius: BorderRadiusGeometry.circular(8),
                               child: Image.memory(shopData!["logo"], width: 55),
                             ),
                           ],
@@ -119,57 +128,144 @@ class _DashboardState extends State<Dashboard> {
                             spacing: 10,
                             children: [
                               Padding(padding: EdgeInsets.all(10)),
-                              Icon(Icons.my_location, color: Colors.amber),
+                              Icon(
+                                Icons.share_location_outlined,
+                                color: Colors.amber,
+                              ),
                               Text(
                                 customiseData!["district"] +
-                                    ",\n" +
+                                    ", " +
                                     customiseData!["state"],
-                              ),
-                            ],
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                spacing: 10,
-                                children: [
-                                  Image.asset(
-                                    "assets/images/profit.gif",
-                                    width: 35,
-                                  ),
-                                  Text(
-                                    "₹ " + roundAndFormat(goldRate!),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
-                                    ),
-                                  ),
-                                  Padding(padding: EdgeInsets.all(2)),
-                                ],
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                spacing: 10,
-                                children: [
-                                  Image.asset(
-                                    "assets/images/silver.png",
-                                    width: 35,
-                                  ),
-                                  Text(
-                                    "₹ " + roundAndFormat(silverRate!),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
-                                    ),
-                                  ),
-                                  Padding(padding: EdgeInsets.all(2)),
-                                ],
                               ),
                             ],
                           ),
                         ],
                       ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(3),
+                          alignment: Alignment.center,
+                          width: 150,
+                          height: 105,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            spacing: 5,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  Text(
+                                    "Gold",
+                                    style: TextStyle(
+                                      color: Colors.grey[700],
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Image.asset(
+                                    opacity: AlwaysStoppedAnimation(.8),
+                                    "assets/images/coins.png",
+                                    width: 50,
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    alignment: Alignment.topLeft,
+                                    child: Text("₹ "),
+                                  ),
+                                  Text(
+                                    roundAndFormat(goldRate!),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 22,
+                                    ),
+                                  ),
+                                  Text(
+                                    " /g",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Padding(padding: EdgeInsets.all(2)),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: EdgeInsets.all(3),
+                          alignment: Alignment.center,
+                          width: 150,
+                          height: 105,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            spacing: 5,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  Text(
+                                    "Silver",
+                                    style: TextStyle(
+                                      color: Colors.grey[700],
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Image.asset(
+                                    opacity: AlwaysStoppedAnimation(.8),
+                                    "assets/images/silver_coin.png",
+                                    width: 45,
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    alignment: Alignment.topLeft,
+                                    child: Text("₹ "),
+                                  ),
+                                  Text(
+                                    roundAndFormat(silverRate!),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 22,
+                                    ),
+                                  ),
+                                  Text(
+                                    " /g",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Padding(padding: EdgeInsets.all(2)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                     //Dashboard Text
                     // Text(body.data![0], style: TextStyle(fontSize: 25)),
                     Expanded(
@@ -181,17 +277,20 @@ class _DashboardState extends State<Dashboard> {
                             topLeft: Radius.circular(40),
                             topRight: Radius.circular(40),
                           ),
-                          gradient: goldGradient,
                         ),
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           spacing: 20,
                           children: [
-                            Text(
-                              "Quick Actions",
-                              style: TextStyle(
-                                fontSize: 30,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                            Container(
+                              padding: EdgeInsets.only(left: 10),
+                              child: Text(
+                                "Quick Actions",
+                                style: TextStyle(
+                                  fontSize: 20,
+
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                             Row(
@@ -210,18 +309,18 @@ class _DashboardState extends State<Dashboard> {
                                   },
                                   style: ElevatedButton.styleFrom(
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                     backgroundColor: Colors.white,
                                   ),
                                   child: Container(
-                                    width: 125,
-                                    height: 130,
+                                    width: 120,
+                                    height: 120,
 
                                     child: Column(
+                                      spacing: 10,
                                       children: [
-                                        Padding(padding: EdgeInsets.all(10)),
-
+                                        Padding(padding: EdgeInsets.all(1)),
                                         Text(
                                           body.data![1],
                                           style: TextStyle(
@@ -232,8 +331,8 @@ class _DashboardState extends State<Dashboard> {
                                         Container(
                                           alignment: Alignment.center,
                                           child: Image.asset(
-                                            "assets/images/customisation.png",
-                                            width: 50,
+                                            "assets/images/cogwheel.png",
+                                            width: 40,
                                           ),
                                         ),
                                       ],
@@ -256,35 +355,30 @@ class _DashboardState extends State<Dashboard> {
                                   },
                                   style: ElevatedButton.styleFrom(
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                     backgroundColor: Colors.white,
                                   ),
                                   child: Container(
-                                    width: 125,
-                                    height: 130,
+                                    width: 120,
+                                    height: 120,
                                     child: Column(
+                                      spacing: 10,
                                       children: [
-                                        Padding(padding: EdgeInsets.all(10)),
-                                        Align(
-                                          alignment: Alignment.topLeft,
-                                          child: Text(
-                                            body.data![2],
-                                            style: TextStyle(
-                                              fontSize: 17,
-                                              color: Colors.black,
-                                            ),
+                                        Padding(padding: EdgeInsets.all(1)),
+                                        Text(
+                                          body.data![2],
+                                          style: TextStyle(
+                                            fontSize: 17,
+                                            color: Colors.black,
                                           ),
                                         ),
 
                                         Container(
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: 12,
-                                          ),
                                           alignment: Alignment.center,
                                           child: Image.asset(
                                             "assets/images/gold.png",
-                                            width: 50,
+                                            width: 40,
                                           ),
                                         ),
                                       ],
@@ -309,35 +403,30 @@ class _DashboardState extends State<Dashboard> {
                                   },
                                   style: ElevatedButton.styleFrom(
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                     backgroundColor: Colors.white,
                                   ),
                                   child: Container(
-                                    width: 125,
-                                    height: 130,
+                                    width: 120,
+                                    height: 120,
                                     child: Column(
+                                      spacing: 10,
                                       children: [
-                                        Padding(padding: EdgeInsets.all(10)),
-                                        Align(
-                                          alignment: Alignment.topLeft,
-                                          child: Text(
-                                            body.data![3],
-                                            style: TextStyle(
-                                              fontSize: 17,
-                                              color: Colors.black,
-                                            ),
+                                        Padding(padding: EdgeInsets.all(1)),
+                                        Text(
+                                          body.data![3],
+                                          style: TextStyle(
+                                            fontSize: 17,
+                                            color: Colors.black,
                                           ),
                                         ),
 
                                         Container(
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: 4,
-                                          ),
                                           alignment: Alignment.center,
                                           child: Image.asset(
                                             "assets/images/checklist.png",
-                                            width: 50,
+                                            width: 40,
                                           ),
                                         ),
                                       ],
@@ -358,16 +447,17 @@ class _DashboardState extends State<Dashboard> {
                                   },
                                   style: ElevatedButton.styleFrom(
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                     backgroundColor: Colors.white,
                                   ),
                                   child: Container(
-                                    width: 125,
-                                    height: 130,
+                                    width: 120,
+                                    height: 120,
                                     child: Column(
+                                      spacing: 10,
                                       children: [
-                                        Padding(padding: EdgeInsets.all(10)),
+                                        Padding(padding: EdgeInsets.all(1)),
                                         Align(
                                           alignment: Alignment.topLeft,
                                           child: Text(
@@ -380,13 +470,10 @@ class _DashboardState extends State<Dashboard> {
                                         ),
 
                                         Container(
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: 10,
-                                          ),
                                           alignment: Alignment.center,
                                           child: Image.asset(
-                                            "assets/images/shop.png",
-                                            width: 50,
+                                            "assets/images/store.png",
+                                            width: 40,
                                           ),
                                         ),
                                       ],
@@ -395,18 +482,87 @@ class _DashboardState extends State<Dashboard> {
                                 ),
                               ],
                             ),
+                            Container(
+                              alignment: Alignment.center,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (builder) {
+                                        return UpdatePage();
+                                      },
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  backgroundColor: const Color.fromARGB(
+                                    255,
+                                    6,
+                                    28,
+                                    53,
+                                  ),
+                                ),
+                                child: Container(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.8,
+                                  height: 80,
+
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: [
+                                      Container(
+                                        alignment: Alignment.center,
+                                        child: Image.asset(
+                                          "assets/images/rocket.png",
+                                          width: 40,
+                                        ),
+                                      ),
+
+                                      Text(
+                                        "Upgrade Version",
+                                        style: TextStyle(
+                                          fontSize: 17,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            5,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.arrow_outward_rounded,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ),
                   ],
                 ),
-              );
-            }
-            return Center(child: Image.asset("assets/images/spinner.gif"));
-          },
-        ),
-      ),
+              ),
+            ),
+          );
+        }
+        return Scaffold(
+          backgroundColor: Color(0xffffffff),
+          body: SafeArea(
+            child: Center(child: Image.asset("assets/images/spinner.gif")),
+          ),
+        );
+      },
     );
   }
 }

@@ -6,19 +6,28 @@ class GetRate {
   static String API_KEY = "QGU1L9DCLXPZNTPSGXC0751PSGXC0";
   static Future<Map<String, double>> goldAndSilver() async {
     final response = await http.get(
-      Uri.parse(
-        "https://api.metals.dev/v1/metal/authority?api_key=QGU1L9DCLXPZNTPSGXC0751PSGXC0&authority=mcx&currency=INR&unit=g",
-      ),
+      Uri.parse("http://192.168.10.162:8006/Gold-Rate-List/"),
     );
     if (response.statusCode == 200) {
       Map<String, dynamic> res =
           jsonDecode(response.body) as Map<String, dynamic>;
-      print(res["rates"]["mcx_silver"]);
-      return {
-        "gold": res["rates"]["mcx_gold"],
-        "silver": res["rates"]["mcx_silver"],
-      };
+      double goldRate = 0;
+      double silverRate = 0;
+      print(res["data"].length);
+
+      for (var ele in res["data"]) {
+        if (goldRate != 0 && silverRate != 0) break;
+        // print(ele);
+        if (ele["Type"] == "Gold" && ele["carat"] == 22) {
+          print(ele["rate"]);
+          goldRate = double.parse(ele["rate"]);
+        } else if (ele["Type"] == "Silver") {
+          print(ele["rate"]);
+          silverRate = double.parse(ele["rate"]);
+        }
+      }
+      return {"gold": goldRate, "silver": silverRate};
     }
-    return {"gold": 4, "silver": 3};
+    return {"gold": 0, "silver": 3};
   }
 }

@@ -65,21 +65,16 @@ class _ProductListState extends State<ProductList>
     begin: Alignment.topRight,
     end: Alignment.bottomRight,
   );
-
+  TextEditingController product_name = TextEditingController();
+  TextEditingController fixed_price = TextEditingController();
   @override
   Widget build(BuildContext context) {
-    TextEditingController product_name = TextEditingController();
-    TextEditingController fixed_price = TextEditingController();
     return FutureBuilder(
       future: futureProductListStr,
       builder: (builder, body) {
         if (body.hasData) {
           List<String> tabs = [body.data![0], body.data![1]];
-          Center viewProducts(
-            TextEditingController product_name,
-            TextEditingController fixed_price,
-            bool isGold,
-          ) {
+          Center viewProducts(bool isGold) {
             List<Map<String, dynamic>>? currList = isGold
                 ? goldList
                 : silverList;
@@ -88,183 +83,370 @@ class _ProductListState extends State<ProductList>
                 crossAxisAlignment: CrossAxisAlignment.center,
 
                 children: [
-                  Padding(padding: EdgeInsets.all(8)),
-                  Text(body.data![3], style: TextStyle(fontSize: 20)),
-                  Padding(padding: EdgeInsets.all(4)),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 220,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          spacing: 5,
-                          children: [
-                            Text(body.data![4]),
-                            TextFormField(
-                              controller: product_name,
-                              textInputAction: TextInputAction.next,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(),
-
-                                focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.amber),
-                                ),
-                                isDense: true,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        width: 80,
-
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          spacing: 5,
-                          children: [
-                            Text(body.data![5]),
-                            TextFormField(
-                              controller: fixed_price,
-                              keyboardType: TextInputType.number,
-
-                              onFieldSubmitted: (value) {
-                                DatabaseHelper.instance
-                                    .insertProduct(
-                                      Product(
-                                        product_name: product_name.text,
-                                        fixed_price: double.parse(
-                                          fixed_price.text,
-                                        ),
-                                        isGold: tabController.index == 0
-                                            ? 1
-                                            : 0,
-                                        isSilver: tabController.index == 0
-                                            ? 0
-                                            : 1,
-                                      ),
-                                    )
-                                    .then((val) {
-                                      getProductList();
-                                    });
-                              },
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(),
-                                focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.amber),
-                                ),
-                                isDense: true,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        alignment: Alignment.center,
-                        padding: EdgeInsets.only(top: 20),
-                        child: IconButton(
-                          style: IconButton.styleFrom(
-                            backgroundColor: isGold
-                                ? Color(0xFFD4AF37)
-                                : Colors.grey[400],
-                          ),
-                          onPressed: () {
-                            DatabaseHelper.instance
-                                .insertProduct(
-                                  Product(
-                                    product_name: product_name.text,
-                                    fixed_price: double.parse(fixed_price.text),
-                                    isGold: tabController.index == 0 ? 1 : 0,
-                                    isSilver: tabController.index == 0 ? 0 : 1,
-                                  ),
-                                )
-                                .then((val) {
-                                  getProductList();
-                                });
-                          },
-                          icon: Icon(Icons.check_rounded, color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Padding(padding: EdgeInsets.all(8)),
-                  Text(body.data![6], style: TextStyle(fontSize: 20)),
-                  Padding(padding: EdgeInsets.all(4)),
-                  if (currList != null)
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          spacing: 10,
-                          children: List.generate(currList!.length, (i) {
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.all(8),
-                                  width: 230,
-                                  decoration: BoxDecoration(
-                                    color: isGold
-                                        ? Colors.amber[50]
-                                        : Colors.grey[100],
-                                    borderRadius: BorderRadius.horizontal(
-                                      left: Radius.circular(4),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    currList![i]["product_name"],
-                                    style: TextStyle(fontSize: 20),
-                                  ),
-                                ),
-                                Container(
-                                  padding: EdgeInsets.all(8),
-                                  width: 80,
-                                  decoration: BoxDecoration(
-                                    gradient: isGold
-                                        ? goldGradient
-                                        : silverGradient,
-
-                                    borderRadius: BorderRadius.horizontal(
-                                      right: Radius.circular(4),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    currList![i]["fixed_price"].toString(),
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      color: isGold
-                                          ? Colors.white
-                                          : Color(0xFF2B2B2B),
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    DatabaseHelper.instance
-                                        .deleteProduct(currList![i]["id"])
-                                        .then((val) {
-                                          getProductList();
-                                        });
-                                  },
-                                  icon: Icon(Icons.delete),
-                                ),
-                              ],
-                            );
-                          }),
-                        ),
-                      ),
+                  Padding(padding: EdgeInsets.all(3)),
+                  Container(
+                    margin: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(width: 0.5, color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    padding: EdgeInsets.all(8),
+                    child: Column(
+                      children: [
+                        Container(
+                          alignment: Alignment.centerLeft,
+                          padding: EdgeInsets.only(left: 20),
+                          child: Text(
+                            body.data![3],
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        Padding(padding: EdgeInsets.all(4)),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 220,
+
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                spacing: 5,
+                                children: [
+                                  Text(
+                                    body.data![4],
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                  SizedBox(
+                                    width: 200,
+                                    height: 32,
+                                    child: TextFormField(
+                                      controller: product_name,
+                                      textInputAction: TextInputAction.next,
+                                      style: TextStyle(fontSize: 12),
+                                      decoration: InputDecoration(
+                                        border: OutlineInputBorder(),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: const Color.fromARGB(
+                                              255,
+                                              221,
+                                              220,
+                                              220,
+                                            ),
+                                          ),
+                                        ),
+                                        contentPadding: EdgeInsets.all(8),
+
+                                        prefixIconConstraints: BoxConstraints(
+                                          minWidth: 25,
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: Colors.amber,
+                                          ),
+                                        ),
+
+                                        isDense: true,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              width: 80,
+
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                spacing: 5,
+                                children: [
+                                  Text(
+                                    body.data![5],
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                  SizedBox(
+                                    width: 80,
+                                    height: 32,
+                                    child: TextFormField(
+                                      controller: fixed_price,
+                                      keyboardType: TextInputType.number,
+
+                                      onFieldSubmitted: (value) {
+                                        DatabaseHelper.instance
+                                            .insertProduct(
+                                              Product(
+                                                product_name: product_name.text,
+                                                fixed_price: double.parse(
+                                                  fixed_price.text,
+                                                ),
+                                                isGold: tabController.index == 0
+                                                    ? 1
+                                                    : 0,
+                                                isSilver:
+                                                    tabController.index == 0
+                                                    ? 0
+                                                    : 1,
+                                              ),
+                                            )
+                                            .then((val) {
+                                              product_name.clear();
+                                              fixed_price.clear();
+                                              getProductList();
+                                            });
+                                      },
+                                      style: TextStyle(fontSize: 12),
+                                      decoration: InputDecoration(
+                                        border: OutlineInputBorder(),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: const Color.fromARGB(
+                                              255,
+                                              221,
+                                              220,
+                                              220,
+                                            ),
+                                          ),
+                                        ),
+                                        contentPadding: EdgeInsets.all(8),
+
+                                        prefixIconConstraints: BoxConstraints(
+                                          minWidth: 25,
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: Colors.amber,
+                                          ),
+                                        ),
+
+                                        isDense: true,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          alignment: Alignment.center,
+
+                          width: 300,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isGold
+                                  ? Colors.amber
+                                  : Colors.grey[400],
+                              minimumSize: Size(300, 30),
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () {
+                              DatabaseHelper.instance
+                                  .insertProduct(
+                                    Product(
+                                      product_name: product_name.text,
+                                      fixed_price: double.parse(
+                                        fixed_price.text,
+                                      ),
+                                      isGold: tabController.index == 0 ? 1 : 0,
+                                      isSilver: tabController.index == 0
+                                          ? 0
+                                          : 1,
+                                    ),
+                                  )
+                                  .then((val) {
+                                    product_name.clear();
+                                    fixed_price.clear();
+
+                                    getProductList();
+                                  });
+                            },
+                            child: Text("Add"),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Container(
+                    width: 500,
+                    height: MediaQuery.of(context).size.height * 0.55,
+                    margin: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(width: 0.5, color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: EdgeInsets.all(8),
+                    child: Column(
+                      children: [
+                        Container(
+                          alignment: Alignment.centerLeft,
+                          padding: EdgeInsets.only(left: 20, top: 5),
+                          child: Text(
+                            body.data![6],
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        Padding(padding: EdgeInsets.all(4)),
+                        if (currList != null)
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: Column(
+                                spacing: 10,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+
+                                children: List.generate(currList!.length, (i) {
+                                  return Container(
+                                    width:
+                                        MediaQuery.of(context).size.width * 0.8,
+                                    child: Column(
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            SizedBox(
+                                              width: 110,
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    "Product Name",
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    currList![i]["product_name"],
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              width: 100,
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.end,
+                                                children: [
+                                                  Text(
+                                                    "Fixed Price",
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    currList![i]["fixed_price"]
+                                                        .toString(),
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            /*      SizedBox(
+                                              width: 80,
+                                              child: IconButton(
+                                                onPressed: () {
+                                                  showDialog(
+                                                    barrierDismissible: false,
+                                                    context: context,
+                                                    builder: (builder) {
+                                                      return AlertDialog(
+                                                        backgroundColor:
+                                                            Colors.white,
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                        ),
+                                                        title: Text(
+                                                          "Are you sure you want to delete this product: ${currList[i]["product_name"]}?",
+                                                          style: TextStyle(
+                                                            fontSize: 16,
+                                                          ),
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () {
+                                                              DatabaseHelper
+                                                                  .instance
+                                                                  .deleteProduct(
+                                                                    currList![i]["id"],
+                                                                  )
+                                                                  .then((val) {
+                                                                    getProductList();
+                                                                    Navigator.of(
+                                                                      context,
+                                                                    ).pop();
+                                                                  });
+                                                            },
+                                                            child: Text("Yes"),
+                                                          ),
+                                                          TextButton(
+                                                            onPressed: () {
+                                                              Navigator.of(
+                                                                context,
+                                                              ).pop();
+                                                            },
+                                                            child: Text("No"),
+                                                          ),
+                                                        ],
+                                                      );
+                                                    },
+                                                  );
+                                                },
+                                                icon: Icon(
+                                                  Icons.delete_rounded,
+                                                  size: 22,
+                                                  color: Colors.red[800],
+                                                ),
+                                              ),
+                                            ), */
+                                          ],
+                                        ),
+                                        Divider(),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             );
           }
 
           return Scaffold(
-            backgroundColor: Color(0xffffffff),
-
+            backgroundColor: Color.fromARGB(246, 255, 255, 255),
+            resizeToAvoidBottomInset: false,
             appBar: AppBar(
+              backgroundColor: Colors.amber[400],
+
               centerTitle: true,
-              title: Text(tabs[tabController.index] + " " + body.data![2]),
+              title: Text(
+                tabs[tabController.index] + " " + body.data![2],
+                style: TextStyle(fontSize: 18),
+              ),
               bottom: TabBar(
                 controller: tabController,
                 tabs: [
@@ -275,10 +457,7 @@ class _ProductListState extends State<ProductList>
             ),
             body: TabBarView(
               controller: tabController,
-              children: [
-                viewProducts(product_name, fixed_price, true),
-                viewProducts(product_name, fixed_price, false),
-              ],
+              children: [viewProducts(true), viewProducts(false)],
             ),
           );
         } else {

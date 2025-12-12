@@ -247,6 +247,7 @@ class DatabaseHelper {
       }
     }
     await queryRates().then((val) async {
+      return;
       DateTime last_updated_time = DateTime.now();
       if (!val.isEmpty) {
         last_updated_time = DateTime.tryParse(val[0]["last_updated_time"])!;
@@ -269,6 +270,10 @@ class DatabaseHelper {
           (last_updated_time.year != now.year)) {
         print("new rate updated");
         Map<String, double> rates = await GetRate.goldAndSilver();
+        if (rates["gold"] == 0) {
+          print("Unable to update rates");
+          return;
+        }
         updateRates(
           Rates(
             id: 1,
