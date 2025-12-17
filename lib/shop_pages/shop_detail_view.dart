@@ -59,7 +59,7 @@ class _ShopDetailViewState extends State<ShopDetailView> {
     );
     if (fileBytes == null) fileBytes = widget.shopData["logo"];
     return Scaffold(
-      backgroundColor: Color(0xffffffff),
+      backgroundColor: Color.fromARGB(246, 255, 255, 255),
       appBar: AppBar(
         backgroundColor: Colors.amber[400],
         title: Text("Shop Details"),
@@ -69,308 +69,383 @@ class _ShopDetailViewState extends State<ShopDetailView> {
           future: futureTranslatedString,
           builder: (context, body) {
             if (body.hasData) {
-              return SizedBox(
-                height: MediaQuery.of(context).size.height * 0.9,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TextButton(
-                        onPressed: () async {
-                          FilePickerResult? result = await FilePicker.platform
-                              .pickFiles(
-                                dialogTitle: "Select a logo",
-                                type: FileType.image,
-                              );
+              return Center(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(width: 0.5, color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: EdgeInsets.all(12),
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  height: MediaQuery.of(context).size.height * 0.8,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TextButton(
+                          onPressed: () async {
+                            FilePickerResult? result = await FilePicker.platform
+                                .pickFiles(
+                                  dialogTitle: "Select a logo",
+                                  type: FileType.image,
+                                );
 
-                          if (result != null) {
-                            print("file selected");
-                            file = File(result.files.single.path!);
-                            setState(() {
-                              print("s1");
-                              if (kIsWeb) {
-                                fileBytes = result.files.first.bytes;
-                              } else {
-                                print("set");
-                                fileBytes = file!.readAsBytesSync();
-                              }
+                            if (result != null) {
+                              print("file selected");
+                              file = File(result.files.single.path!);
+                              setState(() {
+                                print("s1");
+                                if (kIsWeb) {
+                                  fileBytes = result.files.first.bytes;
+                                } else {
+                                  print("set");
+                                  fileBytes = file!.readAsBytesSync();
+                                }
 
-                              print(file);
-                            });
-                          } else {
-                            // User canceled the picker
-                          }
-                        },
+                                print(file);
+                              });
+                            } else {
+                              // User canceled the picker
+                            }
+                          },
 
-                        /*  style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber[800],
-                        ), */
-                        child: fileBytes == null
-                            ? Icon(Icons.camera_alt_outlined, size: 70)
-                            : ClipRRect(
-                                borderRadius: BorderRadiusGeometry.circular(5),
-                                child: Image.memory(fileBytes!, width: 70),
-                              ),
-                      ),
-
-                      Form(
-                        key: _formKey,
-                        child: Center(
-                          child: Column(
-                            spacing: 20,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 350,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  spacing: 5,
-                                  children: [
-                                    Text(body.data![1]),
-                                    TextFormField(
-                                      controller: shop_name,
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return "Enter shop name";
-                                        }
-                                        return null;
-                                      },
-                                      textInputAction: TextInputAction.next,
-                                      decoration: InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        prefixIcon: Icon(Icons.store_outlined),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
-                                            color: Colors.amber,
-                                          ),
-                                        ),
-                                        isDense: true,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                width: 350,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  spacing: 5,
-                                  children: [
-                                    Text(body.data![2]),
-                                    TextFormField(
-                                      controller: phone_num,
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return "Enter phone number";
-                                        }
-                                        return null;
-                                      },
-                                      keyboardType:
-                                          TextInputType.numberWithOptions(
-                                            decimal: true,
-                                          ),
-                                      textInputAction: TextInputAction.next,
-                                      decoration: InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        prefixIcon: Icon(Icons.phone_android),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
-                                            color: Colors.amber,
-                                          ),
-                                        ),
-                                        isDense: true,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                width: 350,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  spacing: 5,
-                                  children: [
-                                    Text(body.data![3]),
-                                    TextFormField(
-                                      controller: addr_line1,
-                                      maxLines: 3,
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return "Enter address line 1";
-                                        }
-                                        return null;
-                                      },
-                                      textInputAction: TextInputAction.next,
-                                      decoration: InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
-                                            color: Colors.amber,
-                                          ),
-                                        ),
-
-                                        isDense: true,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                width: 350,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  spacing: 5,
-                                  children: [
-                                    Text(body.data![4]),
-                                    TextFormField(
-                                      controller: addr_line2,
-                                      maxLines: 3,
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return "Enter address line 2";
-                                        }
-                                        return null;
-                                      },
-                                      textInputAction: TextInputAction.next,
-                                      decoration: InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
-                                            color: Colors.amber,
-                                          ),
-                                        ),
-                                        isDense: true,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                width: 350,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  spacing: 5,
-                                  children: [
-                                    Text(body.data![5]),
-                                    TextFormField(
-                                      controller: printer_name,
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return "Enter bluetooth printer name ";
-                                        }
-                                        return null;
-                                      },
-                                      decoration: InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
-                                            color: Colors.amber,
-                                          ),
-                                        ),
-                                        isDense: true,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              /*     Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  ElevatedButton.icon(
-                                    icon: Icon(
-                                      Icons.file_upload,
-                                      color: Colors.white,
-                                    ),
-                                    onPressed: () async {
-                                      FilePickerResult? result = await FilePicker
-                                          .platform
-                                          .pickFiles(
-                                            dialogTitle: "Select a logo",
-                                            type: FileType.image,
-                                          );
-                                      setState(() {
-                                        fileBytes = result!.files.first.bytes;
-                                      });
-                                  
-                                      if (result != null) {
-                                        setState(() {
-                                          file = File(result.files.single.path!);
-                                  
-                                          print(file);
-                                        });
-                                      } else {
-                                        // User canceled the picker
-                                      }
-                                    },
-                                    label: Text(
-                                      body.data![5],
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.amber[800],
-                                    ),
+                          /*  style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber[800],
+                          ), */
+                          child: fileBytes == null
+                              ? Icon(Icons.camera_alt_outlined, size: 70)
+                              : ClipRRect(
+                                  borderRadius: BorderRadiusGeometry.circular(
+                                    5,
                                   ),
-                                  if (fileBytes != null)
-                                    Image.memory(fileBytes!, width: 30),
-                                ],
-                              ), */
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  print("Done file reading..");
-                                  if (_formKey.currentState!.validate()) {
-                                    DatabaseHelper.instance
-                                        .updateShopDetails(
-                                          Shop(
-                                            id: 1,
-                                            shop_name: shop_name.text,
-                                            mobile_num: phone_num.text,
-                                            addr_line1: addr_line1.text,
-                                            addr_line2: addr_line2.text,
-                                            logo: fileBytes!,
-                                            printer_name: printer_name.text,
-                                          ),
-                                        )
-                                        .then((val) {
-                                          print(val);
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (builder) {
-                                                return Dashboard();
-                                              },
+                                  child: Image.memory(fileBytes!, width: 70),
+                                ),
+                        ),
+
+                        Form(
+                          key: _formKey,
+                          child: Center(
+                            child: Column(
+                              spacing: 20,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 350,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    spacing: 5,
+                                    children: [
+                                      Text(
+                                        body.data![1],
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                      TextFormField(
+                                        style: TextStyle(fontSize: 12),
+                                        controller: shop_name,
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return "Enter shop name";
+                                          }
+                                          return null;
+                                        },
+                                        textInputAction: TextInputAction.next,
+                                        decoration: InputDecoration(
+                                          border: OutlineInputBorder(),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderSide: BorderSide(
+                                              color: const Color.fromARGB(
+                                                255,
+                                                221,
+                                                220,
+                                                220,
+                                              ),
                                             ),
-                                          );
-                                        });
-                                  }
-                                },
-                                style: ButtonStyle(
-                                  backgroundColor: WidgetStatePropertyAll(
-                                    Colors.amber,
-                                  ),
-                                  minimumSize: WidgetStatePropertyAll(
-                                    Size(350, 50),
-                                  ),
-                                  iconColor: WidgetStatePropertyAll(
-                                    Colors.white,
-                                  ),
-                                  iconSize: WidgetStatePropertyAll(23),
-                                ),
-                                icon: Icon(Icons.done),
+                                          ),
+                                          contentPadding: EdgeInsets.all(8),
+                                          hintStyle: TextStyle(fontSize: 6),
+                                          prefixIcon: Icon(Icons.store),
+                                          prefixIconConstraints: BoxConstraints(
+                                            minWidth: 25,
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderSide: BorderSide(
+                                              color: Colors.amber,
+                                            ),
+                                          ),
 
-                                label: Text(
-                                  body.data![6],
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
+                                          isDense: true,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ),
-                            ],
+                                Container(
+                                  width: 350,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    spacing: 5,
+                                    children: [
+                                      Text(
+                                        body.data![2],
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                      TextFormField(
+                                        controller: phone_num,
+                                        style: TextStyle(fontSize: 12),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return "Enter phone number";
+                                          }
+                                          return null;
+                                        },
+                                        keyboardType:
+                                            TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        textInputAction: TextInputAction.next,
+                                        decoration: InputDecoration(
+                                          border: OutlineInputBorder(),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderSide: BorderSide(
+                                              color: const Color.fromARGB(
+                                                255,
+                                                221,
+                                                220,
+                                                220,
+                                              ),
+                                            ),
+                                          ),
+                                          contentPadding: EdgeInsets.all(8),
+                                          hintStyle: TextStyle(fontSize: 6),
+                                          prefixIcon: Icon(Icons.phone),
+                                          prefixIconConstraints: BoxConstraints(
+                                            minWidth: 25,
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderSide: BorderSide(
+                                              color: Colors.amber,
+                                            ),
+                                          ),
+
+                                          isDense: true,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  width: 350,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    spacing: 5,
+                                    children: [
+                                      Text(body.data![3]),
+                                      TextFormField(
+                                        controller: addr_line1,
+                                        maxLines: 3,
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return "Enter address line 1";
+                                          }
+                                          return null;
+                                        },
+                                        textInputAction: TextInputAction.next,
+                                        decoration: InputDecoration(
+                                          border: OutlineInputBorder(),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderSide: BorderSide(
+                                              color: const Color.fromARGB(
+                                                255,
+                                                221,
+                                                220,
+                                                220,
+                                              ),
+                                            ),
+                                          ),
+                                          contentPadding: EdgeInsets.all(8),
+                                          hintStyle: TextStyle(fontSize: 6),
+
+                                          focusedBorder: OutlineInputBorder(
+                                            borderSide: BorderSide(
+                                              color: Colors.amber,
+                                            ),
+                                          ),
+
+                                          isDense: true,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  width: 350,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    spacing: 5,
+                                    children: [
+                                      Text(body.data![4]),
+                                      TextFormField(
+                                        controller: addr_line2,
+                                        maxLines: 3,
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return "Enter address line 2";
+                                          }
+                                          return null;
+                                        },
+                                        textInputAction: TextInputAction.next,
+                                        decoration: InputDecoration(
+                                          border: OutlineInputBorder(),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderSide: BorderSide(
+                                              color: Colors.amber,
+                                            ),
+                                          ),
+                                          isDense: true,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  width: 350,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    spacing: 5,
+                                    children: [
+                                      Text(body.data![5]),
+                                      TextFormField(
+                                        controller: printer_name,
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return "Enter bluetooth printer name ";
+                                          }
+                                          return null;
+                                        },
+                                        decoration: InputDecoration(
+                                          border: OutlineInputBorder(),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderSide: BorderSide(
+                                              color: Colors.amber,
+                                            ),
+                                          ),
+                                          isDense: true,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                /*     Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    ElevatedButton.icon(
+                                      icon: Icon(
+                                        Icons.file_upload,
+                                        color: Colors.white,
+                                      ),
+                                      onPressed: () async {
+                                        FilePickerResult? result = await FilePicker
+                                            .platform
+                                            .pickFiles(
+                                              dialogTitle: "Select a logo",
+                                              type: FileType.image,
+                                            );
+                                        setState(() {
+                                          fileBytes = result!.files.first.bytes;
+                                        });
+                                    
+                                        if (result != null) {
+                                          setState(() {
+                                            file = File(result.files.single.path!);
+                                    
+                                            print(file);
+                                          });
+                                        } else {
+                                          // User canceled the picker
+                                        }
+                                      },
+                                      label: Text(
+                                        body.data![5],
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.amber[800],
+                                      ),
+                                    ),
+                                    if (fileBytes != null)
+                                      Image.memory(fileBytes!, width: 30),
+                                  ],
+                                ), */
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    print("Done file reading..");
+                                    if (_formKey.currentState!.validate()) {
+                                      DatabaseHelper.instance
+                                          .updateShopDetails(
+                                            Shop(
+                                              id: 1,
+                                              shop_name: shop_name.text,
+                                              mobile_num: phone_num.text,
+                                              addr_line1: addr_line1.text,
+                                              addr_line2: addr_line2.text,
+                                              logo: fileBytes!,
+                                              printer_name: printer_name.text,
+                                            ),
+                                          )
+                                          .then((val) {
+                                            print(val);
+                                            Navigator.pushReplacement(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (builder) {
+                                                  return Dashboard();
+                                                },
+                                              ),
+                                            );
+                                          });
+                                    }
+                                  },
+                                  style: ButtonStyle(
+                                    backgroundColor: WidgetStatePropertyAll(
+                                      Colors.amber,
+                                    ),
+                                    minimumSize: WidgetStatePropertyAll(
+                                      Size(350, 50),
+                                    ),
+                                    iconColor: WidgetStatePropertyAll(
+                                      Colors.white,
+                                    ),
+                                    iconSize: WidgetStatePropertyAll(23),
+                                  ),
+                                  icon: Icon(Icons.done),
+
+                                  label: Text(
+                                    body.data![6],
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:goldtrader/SnackBars.dart';
 import 'package:goldtrader/helpers/DatabaseHelper.dart';
+import 'package:goldtrader/helpers/SoldProductsDbHelper.dart';
 import 'package:goldtrader/helpers/TranslateHelper.dart';
 import 'package:goldtrader/model/Product.dart';
+import 'package:goldtrader/model/SoldProducts.dart';
 
 class ProductList extends StatefulWidget {
   const ProductList({super.key});
@@ -14,6 +18,7 @@ class _ProductListState extends State<ProductList>
     with SingleTickerProviderStateMixin {
   late TabController tabController;
   List<Map<String, dynamic>>? goldList;
+  Map<int, int> soldProducts = {};
   List<Map<String, dynamic>>? silverList;
   void getProductList() {
     DatabaseHelper.instance.queryProducts().then((val) {
@@ -29,7 +34,7 @@ class _ProductListState extends State<ProductList>
 
       setState(() {
         goldList = tempGoldList;
-        print(tempGoldList);
+
         silverList = tempSilverList;
       });
     });
@@ -49,10 +54,20 @@ class _ProductListState extends State<ProductList>
       "Products List",
     ]);
     tabController = TabController(length: 2, vsync: this);
-    tabController.addListener(() {
-      setState(() {});
+
+    Soldproductsdbhelper.queryAllProducts().then((val) {
+      for (var element in val) {
+        soldProducts.addAll({element.product_id: 1});
+      }
+      print(soldProducts);
+      getProductList();
     });
-    getProductList();
+
+    tabController.addListener(() {
+      FocusScope.of(context).unfocus();
+      product_name.clear();
+      fixed_price.clear();
+    });
   }
 
   final LinearGradient silverGradient = const LinearGradient(
@@ -67,6 +82,64 @@ class _ProductListState extends State<ProductList>
   );
   TextEditingController product_name = TextEditingController();
   TextEditingController fixed_price = TextEditingController();
+  void addNewProduct() {
+    FocusScope.of(context).unfocus();
+    if (product_name.text == "") {
+      SnackBars.showErrorSnackBar("Enter Product name", context);
+
+      return;
+    } else if (fixed_price.text == "") {
+      SnackBars.showErrorSnackBar("Enter fixed price", context);
+
+      return;
+    }
+    if (double.parse(fixed_price.text) <= 0) {
+      SnackBars.showErrorSnackBar("Invalid Fixed Price", context);
+      fixed_price.clear();
+
+      return;
+    }
+    if (goldList != null && goldList!.isNotEmpty && tabController.index == 0) {
+      for (var element in goldList!) {
+        if (element["product_name"] == product_name.text) {
+          SnackBars.showErrorSnackBar(
+            "${product_name.text} already exists",
+            context,
+          );
+          return;
+        }
+      }
+    } else if (silverList != null &&
+        silverList!.isNotEmpty &&
+        tabController.index == 1) {
+      for (var element in silverList!) {
+        if (element["product_name"] == product_name.text) {
+          SnackBars.showErrorSnackBar(
+            "${product_name.text} already exists",
+            context,
+          );
+          return;
+        }
+      }
+    }
+    DatabaseHelper.instance
+        .insertProduct(
+          Product(
+            product_name: product_name.text,
+            fixed_price: double.parse(fixed_price.text),
+            isGold: tabController.index == 0 ? 1 : 0,
+            isSilver: tabController.index == 0 ? 0 : 1,
+          ),
+        )
+        .then((val) {
+          product_name.clear();
+          fixed_price.clear();
+
+          getProductList();
+          SnackBars.showSuccessSnackBar("Product added successfully", context);
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
@@ -174,30 +247,46 @@ class _ProductListState extends State<ProductList>
                                     height: 32,
                                     child: TextFormField(
                                       controller: fixed_price,
-                                      keyboardType: TextInputType.number,
+                                      keyboardType:
+                                          TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
+                                      inputFormatters: [
+                                        TextInputFormatter.withFunction((
+                                          oldValue,
+                                          newValue,
+                                        ) {
+                                          final text = newValue.text;
 
+                                          // Allow empty
+                                          if (text.isEmpty) return newValue;
+
+                                          // Allow only digits and decimal point
+                                          if (!RegExp(
+                                            r'^[0-9.]*$',
+                                          ).hasMatch(text)) {
+                                            return oldValue;
+                                          }
+
+                                          // Allow only one decimal point
+                                          if ('.'.allMatches(text).length > 1) {
+                                            return oldValue;
+                                          }
+
+                                          // Limit to 2 digits after decimal
+                                          if (text.contains('.')) {
+                                            final parts = text.split('.');
+                                            if (parts.length > 1 &&
+                                                parts[1].length > 2) {
+                                              return oldValue; // ignore extra digits
+                                            }
+                                          }
+
+                                          return newValue;
+                                        }),
+                                      ],
                                       onFieldSubmitted: (value) {
-                                        DatabaseHelper.instance
-                                            .insertProduct(
-                                              Product(
-                                                product_name: product_name.text,
-                                                fixed_price: double.parse(
-                                                  fixed_price.text,
-                                                ),
-                                                isGold: tabController.index == 0
-                                                    ? 1
-                                                    : 0,
-                                                isSilver:
-                                                    tabController.index == 0
-                                                    ? 0
-                                                    : 1,
-                                              ),
-                                            )
-                                            .then((val) {
-                                              product_name.clear();
-                                              fixed_price.clear();
-                                              getProductList();
-                                            });
+                                        addNewProduct();
                                       },
                                       style: TextStyle(fontSize: 12),
                                       decoration: InputDecoration(
@@ -245,25 +334,7 @@ class _ProductListState extends State<ProductList>
                               foregroundColor: Colors.white,
                             ),
                             onPressed: () {
-                              DatabaseHelper.instance
-                                  .insertProduct(
-                                    Product(
-                                      product_name: product_name.text,
-                                      fixed_price: double.parse(
-                                        fixed_price.text,
-                                      ),
-                                      isGold: tabController.index == 0 ? 1 : 0,
-                                      isSilver: tabController.index == 0
-                                          ? 0
-                                          : 1,
-                                    ),
-                                  )
-                                  .then((val) {
-                                    product_name.clear();
-                                    fixed_price.clear();
-
-                                    getProductList();
-                                  });
+                              addNewProduct();
                             },
                             child: Text("Add"),
                           ),
@@ -348,8 +419,9 @@ class _ProductListState extends State<ProductList>
                                                     ),
                                                   ),
                                                   Text(
-                                                    currList![i]["fixed_price"]
-                                                        .toString(),
+                                                    "₹" +
+                                                        currList![i]["fixed_price"]
+                                                            .toStringAsFixed(2),
                                                     style: TextStyle(
                                                       fontWeight:
                                                           FontWeight.w500,
@@ -358,66 +430,82 @@ class _ProductListState extends State<ProductList>
                                                 ],
                                               ),
                                             ),
-                                            /*      SizedBox(
+
+                                            SizedBox(
                                               width: 80,
                                               child: IconButton(
-                                                onPressed: () {
-                                                  showDialog(
-                                                    barrierDismissible: false,
-                                                    context: context,
-                                                    builder: (builder) {
-                                                      return AlertDialog(
-                                                        backgroundColor:
-                                                            Colors.white,
-                                                        shape: RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                8,
+                                                onPressed:
+                                                    !soldProducts!.containsKey(
+                                                      currList[i]["id"],
+                                                    )
+                                                    ? () {
+                                                        showDialog(
+                                                          barrierDismissible:
+                                                              false,
+                                                          context: context,
+                                                          builder: (builder) {
+                                                            return AlertDialog(
+                                                              backgroundColor:
+                                                                  Colors.white,
+                                                              shape: RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      8,
+                                                                    ),
                                                               ),
-                                                        ),
-                                                        title: Text(
-                                                          "Are you sure you want to delete this product: ${currList[i]["product_name"]}?",
-                                                          style: TextStyle(
-                                                            fontSize: 16,
-                                                          ),
-                                                        ),
-                                                        actions: [
-                                                          TextButton(
-                                                            onPressed: () {
-                                                              DatabaseHelper
-                                                                  .instance
-                                                                  .deleteProduct(
-                                                                    currList![i]["id"],
-                                                                  )
-                                                                  .then((val) {
-                                                                    getProductList();
+                                                              title: Text(
+                                                                "Are you sure you want to delete this product: ${currList[i]["product_name"]}?",
+                                                                style:
+                                                                    TextStyle(
+                                                                      fontSize:
+                                                                          16,
+                                                                    ),
+                                                              ),
+                                                              actions: [
+                                                                TextButton(
+                                                                  onPressed: () {
+                                                                    DatabaseHelper
+                                                                        .instance
+                                                                        .deleteProduct(
+                                                                          currList![i]["id"],
+                                                                        )
+                                                                        .then((
+                                                                          val,
+                                                                        ) {
+                                                                          getProductList();
+                                                                          Navigator.of(
+                                                                            context,
+                                                                          ).pop();
+                                                                        });
+                                                                  },
+                                                                  child: Text(
+                                                                    "Yes",
+                                                                  ),
+                                                                ),
+                                                                TextButton(
+                                                                  onPressed: () {
                                                                     Navigator.of(
                                                                       context,
                                                                     ).pop();
-                                                                  });
-                                                            },
-                                                            child: Text("Yes"),
-                                                          ),
-                                                          TextButton(
-                                                            onPressed: () {
-                                                              Navigator.of(
-                                                                context,
-                                                              ).pop();
-                                                            },
-                                                            child: Text("No"),
-                                                          ),
-                                                        ],
-                                                      );
-                                                    },
-                                                  );
-                                                },
+                                                                  },
+                                                                  child: Text(
+                                                                    "No",
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            );
+                                                          },
+                                                        );
+                                                      }
+                                                    : null,
                                                 icon: Icon(
                                                   Icons.delete_rounded,
                                                   size: 22,
-                                                  color: Colors.red[800],
                                                 ),
+                                                disabledColor: Colors.grey,
+                                                color: Colors.red[800],
                                               ),
-                                            ), */
+                                            ),
                                           ],
                                         ),
                                         Divider(),

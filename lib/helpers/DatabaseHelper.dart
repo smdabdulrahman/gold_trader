@@ -23,7 +23,15 @@ class DatabaseHelper {
     String databasesPath = await getDatabasesPath();
     String path = join(databasesPath, 'goldtrader.db');
 
-    return await openDatabase(path, version: 1, onCreate: _onCreate);
+    return await openDatabase(
+      path,
+      version: 1,
+      onConfigure: (db) async {
+        // Must enable foreign keys
+        await db.execute("PRAGMA foreign_keys = ON");
+      },
+      onCreate: _onCreate,
+    );
   }
 
   Future _onCreate(Database db, int version) async {
@@ -92,7 +100,7 @@ class DatabaseHelper {
         final_amount INTEGER,
         customer_id INTEGER,
         count INTEGER,
-        FOREIGN KEY(customer_id) REFERENCES customer(id) ON DELETE SET NULL
+        FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE SET NULL
       )
     ''');
 
@@ -280,16 +288,16 @@ class DatabaseHelper {
                   .toIso8601String(),
             ),
           );
-          /*  showErrorSnackBar(
+          showErrorSnackBar(
             "Network Error , Unable to update gold rate",
             context,
-          ); */
+          );
           return false;
         } else {
-          /* showSuccessSnackBar(
+          showSuccessSnackBar(
             "Sucessfully updated today gold and silver rate",
             context,
-          ); */
+          );
         }
         await insertRates(
           Rates(
@@ -308,16 +316,16 @@ class DatabaseHelper {
         Map<String, double> rates = await GetRate.goldAndSilver();
         if (rates["gold"] == 0) {
           print("Unable to update rates");
-          /*  showErrorSnackBar(
+          showErrorSnackBar(
             "Network Error , Unable to update gold rate",
             context,
-          ); */
+          );
           return false;
         }
-        /*  showSuccessSnackBar(
+        showSuccessSnackBar(
           "Sucessfully updated today gold and silver rate",
           context,
-        ); */
+        );
         await updateRates(
           Rates(
             id: 1,

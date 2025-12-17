@@ -129,7 +129,7 @@ class PrintHelper {
               PrintBluetoothThermal.writeBytes(generator.cut());
               showSuccessSnackBar("Printed", context);
             } else {
-              showErrorSnackBar("Unable to connect !!", context);
+              showErrorSnackBar("Printer is Offline", context);
             }
           });
         }

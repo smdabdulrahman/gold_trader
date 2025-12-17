@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:goldtrader/get_rate.dart';
 import 'package:goldtrader/sales_pages/bill_view.dart';
 import 'package:goldtrader/sales_pages/gold_entry_form.dart';
@@ -43,13 +44,33 @@ class _DashboardState extends State<Dashboard> {
 
   Map<String, dynamic>? shopData;
   Map<String, dynamic>? customiseData;
-  double? goldRate;
-  double? silverRate;
+  double? goldRate = 0;
+  double? silverRate = 0;
   @override
   void initState() {
     super.initState();
     print("kk");
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // perform post-frame initialization here
+      DatabaseHelper.instance.updatedGoldRate(context).then((val) {
+        DatabaseHelper.instance.queryRates().then((val) {
+          setState(() {
+            if (val.isEmpty) {
+              goldRate = 0;
+              silverRate = 0;
+            } else {
+              goldRate = val.first["gold"];
 
+              silverRate = val.first["silver"];
+            }
+
+            print(val);
+          });
+        });
+      });
+
+      //showSuccessSnackBar("d", context);
+    });
     DatabaseHelper.instance.queryShopDetails().then((res) {
       setState(() {
         shopData = res.first;
@@ -60,19 +81,6 @@ class _DashboardState extends State<Dashboard> {
         customiseData = val.first;
       });
     });
-    DatabaseHelper.instance.queryRates().then((val) {
-      setState(() {
-        if (val.isEmpty) {
-          goldRate = 0;
-          silverRate = 0;
-        } else {
-          goldRate = val.first["gold"];
-
-          silverRate = val.first["silver"];
-        }
-        print(val);
-      });
-    });
   }
 
   final LinearGradient goldGradient = const LinearGradient(
@@ -80,6 +88,27 @@ class _DashboardState extends State<Dashboard> {
     begin: Alignment.topRight,
     end: Alignment.bottomRight,
   );
+  void showSuccessSnackBar(String txt, BuildContext context) {
+    HapticFeedback.heavyImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(txt, style: TextStyle(color: Colors.white)),
+        action: SnackBarAction(label: "OK", onPressed: () {}),
+        backgroundColor: Colors.green[800],
+      ),
+    );
+  }
+
+  void showErrorSnackBar(String txt) {
+    HapticFeedback.heavyImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(txt, style: TextStyle(color: Colors.white)),
+        action: SnackBarAction(label: "OK", onPressed: () {}),
+        backgroundColor: Colors.red[800],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

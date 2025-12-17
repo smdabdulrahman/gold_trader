@@ -33,7 +33,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    DatabaseHelper.instance.updatedGoldRate(context);
     return MaterialApp(
       title: 'Gold Trader',
       localizationsDelegates: [
