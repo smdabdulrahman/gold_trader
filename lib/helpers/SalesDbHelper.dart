@@ -21,11 +21,11 @@ class Salesdbhelper {
     return ls_sales;
   }
 
-  static Future<void> deleteLastWeekBeforeSalesDB() async {
-    String last_week_date = DateTime.now()
+  static Future<void> deleteLastWeekBeforeSalesDB(String last_week_date) async {
+    /*  String last_week_date = DateTime.now()
         .subtract(Duration(days: 7))
         .toString()
-        .substring(0, 10);
+        .substring(0, 10); */
     print(last_week_date);
     Database db = await DatabaseHelper.instance.db;
     db

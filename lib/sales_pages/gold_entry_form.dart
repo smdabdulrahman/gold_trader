@@ -111,7 +111,7 @@ class _GoldEntryFormState extends State<GoldEntryForm> {
 
       appBar: AppBar(
         title: Text(
-          "Gold Trader",
+          "Gold Estimation",
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
         ),
         backgroundColor: Colors.amber[400],
@@ -1127,7 +1127,7 @@ class _GoldEntryFormState extends State<GoldEntryForm> {
         borderRadius: BorderRadius.circular(8),
       ),
       padding: EdgeInsets.all(12),
-      width: 350,
+      width: MediaQuery.of(context).size.width * 0.9,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1224,7 +1224,10 @@ class _GoldEntryFormState extends State<GoldEntryForm> {
                       List<Option> options = currList.map((e) {
                         return Option(label: e["product_name"], value: e["id"]);
                       }).toList();
-
+                      if (options.isEmpty)
+                        options.add(
+                          Option(label: "No products were added", value: 0),
+                        );
                       return SizedBox(
                         width: MediaQuery.of(context).size.width * 0.5,
                         height: 32,
@@ -1241,7 +1244,8 @@ class _GoldEntryFormState extends State<GoldEntryForm> {
                             },
                           ),
                           onOptionSelected: (option) {
-                            product_controller.text = option.label;
+                            if (option.label != "No products were added")
+                              product_controller.text = option.label;
                             setState(() {
                               product_id = option.value;
                             });

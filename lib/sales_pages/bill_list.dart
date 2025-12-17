@@ -28,7 +28,8 @@ class _BillListState extends State<BillList> {
         ),
       ),
       body: SafeArea(
-        child: Expanded(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.8,
           child: SingleChildScrollView(
             child: FutureBuilder(
               future: sales_list,

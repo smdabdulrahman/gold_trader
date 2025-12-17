@@ -33,7 +33,7 @@ class _ShopDetailViewState extends State<ShopDetailView> {
       "Phone Number",
       "Address Line 1",
       "Address Line 2",
-      "Printer name",
+      "Bluetooth Printer name",
       "Update & Continue",
     ]);
   }
@@ -69,7 +69,8 @@ class _ShopDetailViewState extends State<ShopDetailView> {
           future: futureTranslatedString,
           builder: (context, body) {
             if (body.hasData) {
-              return Expanded(
+              return SizedBox(
+                height: MediaQuery.of(context).size.height * 0.9,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -128,6 +129,13 @@ class _ShopDetailViewState extends State<ShopDetailView> {
                                     Text(body.data![1]),
                                     TextFormField(
                                       controller: shop_name,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return "Enter shop name";
+                                        }
+                                        return null;
+                                      },
+                                      textInputAction: TextInputAction.next,
                                       decoration: InputDecoration(
                                         border: OutlineInputBorder(),
                                         prefixIcon: Icon(Icons.store_outlined),
@@ -151,6 +159,17 @@ class _ShopDetailViewState extends State<ShopDetailView> {
                                     Text(body.data![2]),
                                     TextFormField(
                                       controller: phone_num,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return "Enter phone number";
+                                        }
+                                        return null;
+                                      },
+                                      keyboardType:
+                                          TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
+                                      textInputAction: TextInputAction.next,
                                       decoration: InputDecoration(
                                         border: OutlineInputBorder(),
                                         prefixIcon: Icon(Icons.phone_android),
@@ -175,6 +194,13 @@ class _ShopDetailViewState extends State<ShopDetailView> {
                                     TextFormField(
                                       controller: addr_line1,
                                       maxLines: 3,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return "Enter address line 1";
+                                        }
+                                        return null;
+                                      },
+                                      textInputAction: TextInputAction.next,
                                       decoration: InputDecoration(
                                         border: OutlineInputBorder(),
                                         focusedBorder: OutlineInputBorder(
@@ -199,6 +225,13 @@ class _ShopDetailViewState extends State<ShopDetailView> {
                                     TextFormField(
                                       controller: addr_line2,
                                       maxLines: 3,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return "Enter address line 2";
+                                        }
+                                        return null;
+                                      },
+                                      textInputAction: TextInputAction.next,
                                       decoration: InputDecoration(
                                         border: OutlineInputBorder(),
                                         focusedBorder: OutlineInputBorder(
@@ -221,7 +254,12 @@ class _ShopDetailViewState extends State<ShopDetailView> {
                                     Text(body.data![5]),
                                     TextFormField(
                                       controller: printer_name,
-
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return "Enter bluetooth printer name ";
+                                        }
+                                        return null;
+                                      },
                                       decoration: InputDecoration(
                                         border: OutlineInputBorder(),
                                         focusedBorder: OutlineInputBorder(
@@ -279,29 +317,31 @@ class _ShopDetailViewState extends State<ShopDetailView> {
                               ElevatedButton.icon(
                                 onPressed: () {
                                   print("Done file reading..");
-                                  DatabaseHelper.instance
-                                      .updateShopDetails(
-                                        Shop(
-                                          id: 1,
-                                          shop_name: shop_name.text,
-                                          mobile_num: phone_num.text,
-                                          addr_line1: addr_line1.text,
-                                          addr_line2: addr_line2.text,
-                                          logo: fileBytes!,
-                                          printer_name: printer_name.text,
-                                        ),
-                                      )
-                                      .then((val) {
-                                        print(val);
-                                        Navigator.pushReplacement(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (builder) {
-                                              return Dashboard();
-                                            },
+                                  if (_formKey.currentState!.validate()) {
+                                    DatabaseHelper.instance
+                                        .updateShopDetails(
+                                          Shop(
+                                            id: 1,
+                                            shop_name: shop_name.text,
+                                            mobile_num: phone_num.text,
+                                            addr_line1: addr_line1.text,
+                                            addr_line2: addr_line2.text,
+                                            logo: fileBytes!,
+                                            printer_name: printer_name.text,
                                           ),
-                                        );
-                                      });
+                                        )
+                                        .then((val) {
+                                          print(val);
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (builder) {
+                                                return Dashboard();
+                                              },
+                                            ),
+                                          );
+                                        });
+                                  }
                                 },
                                 style: ButtonStyle(
                                   backgroundColor: WidgetStatePropertyAll(

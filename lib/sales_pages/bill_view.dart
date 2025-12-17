@@ -79,6 +79,36 @@ class _BillViewState extends State<BillView> {
     };
   }
 
+  String toAmPmWithSeconds(String time24) {
+    final parts = time24.split(':');
+
+    int hour = int.parse(parts[0]);
+    int minute = int.parse(parts[1]);
+    int second = int.parse(parts[2]);
+
+    String period = hour >= 12 ? "PM" : "AM";
+
+    // Convert hour to 12-hour
+    int displayHour = hour % 12;
+    if (displayHour == 0) displayHour = 12;
+
+    // Add leading zeros
+    String hh = displayHour.toString().padLeft(2, '0');
+    String mm = minute.toString().padLeft(2, '0');
+    String ss = second.toString().padLeft(2, '0');
+
+    return "$hh:$mm:$ss $period";
+  }
+
+  String convertDate(String date) {
+    final parts = date.split('-');
+    String year = parts[0];
+    String month = parts[1];
+    String day = parts[2];
+
+    return "$day/$month/$year";
+  }
+
   String roundAndFormat(double n) {
     double r = (n * 90).round() / 90; // 4 decimals → 2 decimals
     return f.format(r); // Indian format
@@ -218,7 +248,7 @@ class _BillViewState extends State<BillView> {
                         pw.Container(
                           width: pageFormat.availableWidth * 0.5,
                           child: pw.Text(
-                            "Date: ${sales_date_time.toString().substring(0, 11)}",
+                            "Date: ${convertDate(sales_date_time.toString().substring(0, 11))}",
                             style: pw.TextStyle(fontSize: 9),
                           ),
                         ),
@@ -240,7 +270,7 @@ class _BillViewState extends State<BillView> {
                         pw.Container(
                           width: pageFormat.availableWidth * 0.5,
                           child: pw.Text(
-                            "Time: ${sale.date_time.substring(11, 19)}",
+                            "Time: ${toAmPmWithSeconds(sale.date_time.substring(11, 19))}",
                             style: pw.TextStyle(fontSize: 9),
                           ),
                         ),
@@ -600,15 +630,26 @@ class _BillViewState extends State<BillView> {
               pw.SizedBox(height: 3),
               dotted_line(),
               pw.SizedBox(height: 20),
-              pw.Center(child: pw.Text("*** Thank You ***")),
+              pw.Center(
+                child: pw.Text(
+                  "*** Thank You ,Come Again ***",
+                  style: pw.TextStyle(fontSize: 10),
+                ),
+              ),
               pw.SizedBox(height: 6),
               pw.Center(
                 child: pw.Row(
                   crossAxisAlignment: pw.CrossAxisAlignment.center,
                   mainAxisAlignment: pw.MainAxisAlignment.center,
                   children: [
-                    pw.Text("Powered by ", style: pw.TextStyle(fontSize: 12)),
-                    pw.Text("BUYP", style: pw.TextStyle(fontSize: 12)),
+                    pw.Text(
+                      "Technology Partner",
+                      style: pw.TextStyle(fontSize: 10),
+                    ),
+                    pw.Text(
+                      " Buyp - 1800 890 080 ",
+                      style: pw.TextStyle(fontSize: 10),
+                    ),
                   ],
                 ),
               ),
@@ -653,6 +694,7 @@ class _BillViewState extends State<BillView> {
       backgroundColor: Color(0xffffffff),
       appBar: AppBar(
         title: Text("Bill"),
+        backgroundColor: Colors.amber[400],
         actions: [
           IconButton(
             onPressed: () {
@@ -768,75 +810,184 @@ class _BillViewState extends State<BillView> {
     return Center(
       child: SizedBox(
         width: MediaQuery.of(context).size.width * 0.9,
-        child: Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              spacing: 9,
-              children: [
-                //shop details
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Image.memory(shop_details["logo"], width: 50),
-                    Text(
-                      shop_details["shop_name"],
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+        height: MediaQuery.of(context).size.height * 0.8,
+        child: SingleChildScrollView(
+          child: Column(
+            spacing: 9,
+            children: [
+              //shop details
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.memory(shop_details["logo"], width: 50),
+                  Text(
+                    shop_details["shop_name"],
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    shop_details["addr_line1"] +
+                        "," +
+                        shop_details["addr_line2"],
+                  ),
+                  Text("Mobile : " + shop_details["mobile_num"]),
+                ],
+              ),
+              DottedLine(),
+              //bill detail and customer detail
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Bill No : " + sale.id.toString()),
+                      Text(
+                        // ignore: prefer_interpolation_to_compose_strings
+                        "Date : " +
+                            convertDate(sale.date_time.substring(0, 10)),
                       ),
-                    ),
-                    Text(
-                      shop_details["addr_line1"] +
-                          "," +
-                          shop_details["addr_line2"],
-                    ),
-                    Text("Mobile : " + shop_details["mobile_num"]),
-                  ],
-                ),
-                DottedLine(),
-                //bill detail and customer detail
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
+                      Text(
+                        "Time : " +
+                            toAmPmWithSeconds(sale.date_time.substring(11, 19)),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    width: MediaQuery.of(context).size.width * 0.5,
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Bill No : " + sale.id.toString()),
-                        Text(
-                          // ignore: prefer_interpolation_to_compose_strings
-                          "Date : " +
-                              (sales_date_time.day.toString()) +
-                              "-" +
-                              (sales_date_time.month.toString()) +
-                              "-" +
-                              (sales_date_time.year.toString()),
-                        ),
-                        Text(
-                          "Time : " +
-                              sales_date_time.hour.toString() +
-                              " : " +
-                              (sales_date_time.minute.toString()) +
-                              " : " +
-                              sales_date_time.second.toString(),
-                        ),
+                        Text("Name : " + customer.name),
+                        Text("Mobile : " + customer.phone_no.toString()),
+                        Text("Place : " + customer.place),
                       ],
                     ),
-                    Container(
-                      width: MediaQuery.of(context).size.width * 0.5,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Name : " + customer.name),
-                          Text("Mobile : " + customer.phone_no.toString()),
-                          Text("Place : " + customer.place),
-                        ],
+                  ),
+                ],
+              ),
+              DottedLine(),
+              Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.3,
+                        child: Text(
+                          "Product",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.2,
+                        child: Text(
+                          "Type",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.15,
+                        child: Text(
+                          "Gram",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.25,
+                        child: Text(
+                          "Total",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 4),
+                  DottedLine(),
+                  SizedBox(height: 4),
+                  ...List.generate(sold_products.length, (i) {
+                    return Column(
+                      spacing: 5,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.3,
+                              child: Text(
+                                products[sold_products[i]
+                                    .product_id]["product_name"],
+                              ),
+                            ),
+
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.2,
+                              child: Text(
+                                products[sold_products[i]
+                                            .product_id]["isGold"] ==
+                                        1
+                                    ? "Gold"
+                                    : "Silver",
+                              ),
+                            ),
+
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.15,
+                              child: Text(sold_products[i].gram.toString()),
+                            ),
+
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.25,
+                              child: Text(
+                                "₹" +
+                                    f.format(
+                                      sold_products[i].total_amount.toInt(),
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  }),
+                ],
+              ),
+              DottedLine(),
+              Row(
+                children: [
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.65,
+                    child: Column(
+                      spacing: 8,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Total Amount"),
+                        Text("GST Amount"),
+                        Text("Final Amount"),
+                      ],
                     ),
-                  ],
-                ),
-                DottedLine(),
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      spacing: 8,
+                      children: [
+                        Text("₹" + f.format(total_amount)),
+                        Text("₹" + f.format(total_gst_amount)),
+                        Text("₹" + f.format(total_final_amount)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (old_products.isNotEmpty) DottedLine(),
+              if (old_products.isNotEmpty)
                 Column(
+                  spacing: 9,
                   children: [
+                    Text(
+                      "Old Gold & Silver",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     Row(
                       children: [
                         Container(
@@ -854,7 +1005,7 @@ class _BillViewState extends State<BillView> {
                           ),
                         ),
                         Container(
-                          width: MediaQuery.of(context).size.width * 0.15,
+                          width: MediaQuery.of(context).size.width * 0.2,
                           child: Text(
                             "Gram",
                             style: TextStyle(fontWeight: FontWeight.bold),
@@ -862,7 +1013,7 @@ class _BillViewState extends State<BillView> {
                         ),
 
                         Container(
-                          width: MediaQuery.of(context).size.width * 0.25,
+                          width: MediaQuery.of(context).size.width * 0.2,
                           child: Text(
                             "Total",
                             style: TextStyle(fontWeight: FontWeight.bold),
@@ -870,43 +1021,36 @@ class _BillViewState extends State<BillView> {
                         ),
                       ],
                     ),
-                    ...List.generate(sold_products.length, (i) {
+                    ...List.generate(old_products.length, (i) {
                       return Column(
                         spacing: 5,
                         children: [
+                          DottedLine(),
                           Row(
                             children: [
                               Container(
                                 width: MediaQuery.of(context).size.width * 0.3,
-                                child: Text(
-                                  products[sold_products[i]
-                                      .product_id]["product_name"],
-                                ),
+                                child: Text(old_products[i].old_product_name),
                               ),
 
                               Container(
                                 width: MediaQuery.of(context).size.width * 0.2,
                                 child: Text(
-                                  products[sold_products[i]
-                                              .product_id]["isGold"] ==
-                                          1
+                                  old_products[i].isGold == 1
                                       ? "Gold"
                                       : "Silver",
                                 ),
                               ),
 
                               Container(
-                                width: MediaQuery.of(context).size.width * 0.15,
-                                child: Text(sold_products[i].gram.toString()),
+                                width: MediaQuery.of(context).size.width * 0.2,
+                                child: Text(old_products[i].gram.toString()),
                               ),
 
                               Container(
-                                width: MediaQuery.of(context).size.width * 0.25,
+                                width: MediaQuery.of(context).size.width * 0.2,
                                 child: Text(
-                                  "₹" +
-                                      f.format(
-                                        sold_products[i].total_amount.toInt(),
-                                      ),
+                                  "₹" + f.format(old_products[i].final_amount),
                                 ),
                               ),
                             ],
@@ -916,189 +1060,65 @@ class _BillViewState extends State<BillView> {
                     }),
                   ],
                 ),
-                DottedLine(),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.65,
-                      child: Column(
-                        spacing: 8,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Total Amount"),
-                          Text("GST Amount"),
-                          Text("Final Amount"),
-                        ],
-                      ),
-                    ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.2,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        spacing: 8,
-                        children: [
-                          Text("₹" + f.format(total_amount)),
-                          Text("₹" + f.format(total_gst_amount)),
-                          Text("₹" + f.format(total_final_amount)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                if (old_products.isNotEmpty) DottedLine(),
-                if (old_products.isNotEmpty)
-                  Column(
-                    spacing: 9,
-                    children: [
-                      Text(
-                        "Old Gold & Silver",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Row(
-                        children: [
-                          Container(
-                            width: MediaQuery.of(context).size.width * 0.3,
-                            child: Text(
-                              "Product",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Container(
-                            width: MediaQuery.of(context).size.width * 0.2,
-                            child: Text(
-                              "Type",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Container(
-                            width: MediaQuery.of(context).size.width * 0.2,
-                            child: Text(
-                              "Gram",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-
-                          Container(
-                            width: MediaQuery.of(context).size.width * 0.2,
-                            child: Text(
-                              "Total",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
-                      ),
-                      ...List.generate(old_products.length, (i) {
-                        return Column(
-                          spacing: 5,
-                          children: [
-                            DottedLine(),
-                            Row(
-                              children: [
-                                Container(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.3,
-                                  child: Text(old_products[i].old_product_name),
-                                ),
-
-                                Container(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.2,
-                                  child: Text(
-                                    old_products[i].isGold == 1
-                                        ? "Gold"
-                                        : "Silver",
-                                  ),
-                                ),
-
-                                Container(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.2,
-                                  child: Text(old_products[i].gram.toString()),
-                                ),
-
-                                Container(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.2,
-                                  child: Text(
-                                    "₹" +
-                                        f.format(old_products[i].final_amount),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        );
-                      }),
-                    ],
+              if (old_products.isNotEmpty) DottedLine(),
+              Row(
+                children: [
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    child: Text("Old Product Total"),
                   ),
-                if (old_products.isNotEmpty) DottedLine(),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.7,
-                      child: Text("Old Product Total"),
-                    ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.2,
-                      child: Text("₹" + f.format(sale.old_amount)),
-                    ),
-                  ],
-                ),
-                DottedLine(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Grand Total",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      "₹" + f.format(sale.final_amount - sale.old_amount),
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber,
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.2,
+                    child: Text("₹" + f.format(sale.old_amount)),
                   ),
-                  onPressed: () async {
-                    PrintHelper.print80mmBill(
-                      File(bill_path),
-                      shop_details["printer_name"],
-                      context,
-                    );
-                    saveAsPdf(
-                      context,
-                      shop_details,
-                      sale,
-                      sales_date_time,
-                      customer,
-                      sold_products,
-                      products,
-                      total_amount,
-                      total_gst_amount,
-                      total_final_amount,
-                      old_products,
-                    );
-                  },
-                  icon: Icon(Icons.print, color: Colors.white),
-                  label: Text(
-                    "Print",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                ],
+              ),
+              DottedLine(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Grand Total",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    "₹" + f.format(sale.final_amount - sale.old_amount),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+                onPressed: () async {
+                  PrintHelper.print80mmBill(
+                    File(bill_path),
+                    shop_details["printer_name"],
+                    context,
+                  );
+                  saveAsPdf(
+                    context,
+                    shop_details,
+                    sale,
+                    sales_date_time,
+                    customer,
+                    sold_products,
+                    products,
+                    total_amount,
+                    total_gst_amount,
+                    total_final_amount,
+                    old_products,
+                  );
+                },
+                icon: Icon(Icons.print, color: Colors.white),
+                label: Text(
+                  "Print",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

@@ -37,9 +37,20 @@ class _ShopDetailsFormState extends State<ShopDetailsForm> {
       "Phone Number",
       "Address Line 1",
       "Address Line 2",
-      "Printer name",
+      "Bluetooth Printer name",
       "Submit & Continue",
     ]);
+  }
+
+  void showErrorSnackBar(String txt, BuildContext context) {
+    HapticFeedback.heavyImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(txt, style: TextStyle(color: Colors.white)),
+        action: SnackBarAction(label: "OK", onPressed: () {}),
+        backgroundColor: Colors.red[800],
+      ),
+    );
   }
 
   File? file;
@@ -53,7 +64,8 @@ class _ShopDetailsFormState extends State<ShopDetailsForm> {
           future: futureTranslatedString,
           builder: (context, body) {
             if (body.hasData) {
-              return Expanded(
+              return SizedBox(
+                height: MediaQuery.of(context).size.height * 0.9,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -106,6 +118,13 @@ class _ShopDetailsFormState extends State<ShopDetailsForm> {
                                     Text(body.data![1]),
                                     TextFormField(
                                       controller: shop_name,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return "Enter shop name";
+                                        }
+                                        return null;
+                                      },
+                                      textInputAction: TextInputAction.next,
                                       decoration: InputDecoration(
                                         border: OutlineInputBorder(),
                                         prefixIcon: Icon(Icons.store_outlined),
@@ -129,6 +148,17 @@ class _ShopDetailsFormState extends State<ShopDetailsForm> {
                                     Text(body.data![2]),
                                     TextFormField(
                                       controller: phone_num,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return "Enter phone number";
+                                        }
+                                        return null;
+                                      },
+                                      keyboardType:
+                                          TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
+                                      textInputAction: TextInputAction.next,
                                       decoration: InputDecoration(
                                         border: OutlineInputBorder(),
                                         prefixIcon: Icon(Icons.phone_android),
@@ -153,6 +183,13 @@ class _ShopDetailsFormState extends State<ShopDetailsForm> {
                                     TextFormField(
                                       controller: addr_line1,
                                       maxLines: 3,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return "Enter address line 1";
+                                        }
+                                        return null;
+                                      },
+                                      textInputAction: TextInputAction.next,
                                       decoration: InputDecoration(
                                         border: OutlineInputBorder(),
                                         focusedBorder: OutlineInputBorder(
@@ -160,9 +197,7 @@ class _ShopDetailsFormState extends State<ShopDetailsForm> {
                                             color: Colors.amber,
                                           ),
                                         ),
-                                        prefixIcon: Icon(
-                                          Icons.edit_location_outlined,
-                                        ),
+
                                         isDense: true,
                                       ),
                                     ),
@@ -179,6 +214,13 @@ class _ShopDetailsFormState extends State<ShopDetailsForm> {
                                     TextFormField(
                                       controller: addr_line2,
                                       maxLines: 3,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return "Enter address line 2";
+                                        }
+                                        return null;
+                                      },
+                                      textInputAction: TextInputAction.next,
                                       decoration: InputDecoration(
                                         border: OutlineInputBorder(),
                                         focusedBorder: OutlineInputBorder(
@@ -201,7 +243,12 @@ class _ShopDetailsFormState extends State<ShopDetailsForm> {
                                     Text(body.data![5]),
                                     TextFormField(
                                       controller: printer_name,
-
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return "Enter bluetooth printer name ";
+                                        }
+                                        return null;
+                                      },
                                       decoration: InputDecoration(
                                         border: OutlineInputBorder(),
                                         focusedBorder: OutlineInputBorder(
@@ -259,30 +306,37 @@ class _ShopDetailsFormState extends State<ShopDetailsForm> {
                               ElevatedButton.icon(
                                 onPressed: () {
                                   print("Done file reading..");
-                                  DatabaseHelper.instance
-                                      .insertShopDetails(
-                                        Shop(
-                                          shop_name: shop_name.text,
-                                          mobile_num: phone_num.text,
-                                          addr_line1: addr_line1.text,
-                                          addr_line2: addr_line2.text,
-                                          logo: fileBytes!,
-                                          printer_name: printer_name.text,
-                                        ),
-                                      )
-                                      .then((val) {
-                                        print(val);
-                                        Navigator.of(
-                                          context,
-                                        ).pushAndRemoveUntil(
-                                          MaterialPageRoute(
-                                            builder: (builder) {
-                                              return Dashboard();
-                                            },
+
+                                  if (_formKey.currentState!.validate() &&
+                                      fileBytes != null) {
+                                    DatabaseHelper.instance
+                                        .insertShopDetails(
+                                          Shop(
+                                            shop_name: shop_name.text,
+                                            mobile_num: phone_num.text,
+                                            addr_line1: addr_line1.text,
+                                            addr_line2: addr_line2.text,
+                                            logo: fileBytes!,
+                                            printer_name: printer_name.text,
                                           ),
-                                          (route) => false,
-                                        );
-                                      });
+                                        )
+                                        .then((val) {
+                                          print(val);
+                                          Navigator.of(
+                                            context,
+                                          ).pushAndRemoveUntil(
+                                            MaterialPageRoute(
+                                              builder: (builder) {
+                                                return Dashboard();
+                                              },
+                                            ),
+                                            (route) => false,
+                                          );
+                                        });
+                                  }
+                                  if (fileBytes == null) {
+                                    showErrorSnackBar("Upload Logo", context);
+                                  }
                                 },
                                 style: ButtonStyle(
                                   backgroundColor: WidgetStatePropertyAll(

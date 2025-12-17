@@ -2,43 +2,36 @@ import 'dart:io';
 
 import 'package:goldtrader/helpers/PdfHelper.dart';
 import 'package:goldtrader/helpers/SalesDbHelper.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class Filehelper {
   static late Directory dir;
   static void getPermissionAndCreateFolder() async {
-    if (await Permission.manageExternalStorage.request().isGranted) {
-      dir = Directory("/storage/emulated/0/GoldTrader");
-      if (!dir.existsSync()) dir.createSync();
-      Filehelper.deleteSalesWeekBefore();
-    } else {
-      // Handle permission denied
-      throw Exception("Storage permission not granted");
-    }
+    final extDir = await getExternalStorageDirectory();
+
+    dir = Directory('${extDir!.path}');
+
+    if (!dir.existsSync()) dir.createSync();
+    Filehelper.deleteSalesWeekBefore();
+
+    // Handle permission denied
+    /*  throw Exception("Storage permission not granted"); */
   }
 
   static void deleteSalesWeekBefore() {
-    final weekDays = [
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thrusday",
-      "Friday",
-      "Saturday",
-      "Sunday",
-    ];
-    String today = weekDays[DateTime.now().weekday - 1];
-    String prev_week_date = DateTime.now()
-        .subtract(Duration(days: 7))
-        .toIso8601String()
-        .substring(0, 10);
-    Directory weekDir = Directory(
-      Filehelper.dir.path + "/${today}_${prev_week_date}",
-    );
-    print(weekDir.path);
-    if (weekDir.existsSync()) {
-      weekDir.deleteSync(recursive: true);
-      Salesdbhelper.deleteLastWeekBeforeSalesDB();
-    }
+    DateTime now = DateTime.now();
+    Filehelper.dir.listSync().forEach((p) {
+      String folder_name = p.path.substring(p.path.lastIndexOf("/") + 1);
+      String curr_bill_date = folder_name.substring(
+        folder_name.lastIndexOf("_") + 1,
+      );
+      print(curr_bill_date);
+      print(now.difference(DateTime.parse(curr_bill_date)).inDays);
+      if (now.difference(DateTime.parse(curr_bill_date)).inDays > 6) {
+        p.deleteSync(recursive: true);
+        Salesdbhelper.deleteLastWeekBeforeSalesDB(curr_bill_date);
+      }
+    });
   }
 }

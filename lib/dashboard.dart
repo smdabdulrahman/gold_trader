@@ -10,6 +10,7 @@ import 'package:goldtrader/settings/select_language.dart';
 import 'package:goldtrader/gold_price_edit.dart';
 import 'package:goldtrader/settings.dart';
 import 'package:goldtrader/shop_pages/shop_detail_view.dart';
+import 'package:goldtrader/shop_pages/shop_details_form.dart';
 import 'package:goldtrader/update_page.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -48,7 +49,7 @@ class _DashboardState extends State<Dashboard> {
   void initState() {
     super.initState();
     print("kk");
-    GetRate.goldAndSilver();
+
     DatabaseHelper.instance.queryShopDetails().then((res) {
       setState(() {
         shopData = res.first;
@@ -61,9 +62,14 @@ class _DashboardState extends State<Dashboard> {
     });
     DatabaseHelper.instance.queryRates().then((val) {
       setState(() {
-        goldRate = val.first["gold"];
+        if (val.isEmpty) {
+          goldRate = 0;
+          silverRate = 0;
+        } else {
+          goldRate = val.first["gold"];
 
-        silverRate = val.first["silver"];
+          silverRate = val.first["silver"];
+        }
         print(val);
       });
     });
