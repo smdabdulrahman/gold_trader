@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+/* import 'package:flutter/material.dart';
 import 'package:flutter_animated_splash/flutter_animated_splash.dart';
 import 'package:goldtrader/helpers/DatabaseHelper.dart';
 import 'package:goldtrader/home.dart';
@@ -25,7 +25,7 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.asset('assets/images/s1.png', width: 200),
+            Image.asset('assets/images/app_logo.png', width: 200),
             Container(
               padding: EdgeInsets.all(5),
               decoration: BoxDecoration(color: Colors.amber),
@@ -44,3 +44,4 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
+ */

@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:goldtrader/helpers/DatabaseHelper.dart';
 import 'package:goldtrader/helpers/FileHelper.dart';
+import 'package:goldtrader/helpers/SalesDbHelper.dart';
 import 'package:goldtrader/helpers/TranslateHelper.dart';
+import 'package:goldtrader/redirect.dart';
 
 import 'package:goldtrader/splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -55,7 +57,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.yellowAccent),
         fontFamily: "Poppins",
       ),
-      home: SplashScreen(),
+      home: Redirect(),
     );
   }
 }

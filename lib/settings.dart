@@ -47,27 +47,37 @@ class _SettingsState extends State<Settings> {
   };
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xffffffff),
-      appBar: AppBar(),
-      body: SafeArea(
-        child: FutureBuilder(
-          future: futureSettingsStr,
-          builder: (builder, body) {
-            if (body.hasData) {
-              return Column(
+    return FutureBuilder(
+      future: futureSettingsStr,
+      builder: (builder, body) {
+        if (body.hasData) {
+          return Scaffold(
+            backgroundColor: Color.fromARGB(246, 255, 255, 255),
+            appBar: AppBar(
+              title: Text(
+                body.data![0],
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w400),
+              ),
+              backgroundColor: Colors.amber[400],
+            ),
+            body: SafeArea(
+              child: Column(
                 children: [
                   Padding(padding: EdgeInsets.all(4)),
-                  Text(body.data![0], style: TextStyle(fontSize: 25)),
-                  Container(
-                    padding: EdgeInsets.all(20),
 
+                  Container(
+                    padding: EdgeInsets.all(10),
+                    margin: EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(width: 0.5, color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Column(
                       children: [
                         Container(
-                          height: 80,
+                          height: 68,
                           padding: EdgeInsets.symmetric(horizontal: 10),
-                          decoration: BoxDecoration(color: Colors.grey[50]),
 
                           child: InkWell(
                             onTap: () {
@@ -87,7 +97,7 @@ class _SettingsState extends State<Settings> {
                                   children: [
                                     Icon(
                                       Icons.language_outlined,
-                                      size: 30,
+                                      size: 25,
                                       color: Colors.amber,
                                     ),
                                     Column(
@@ -98,7 +108,7 @@ class _SettingsState extends State<Settings> {
                                       children: [
                                         Text(
                                           body.data![1],
-                                          style: TextStyle(fontSize: 20),
+                                          style: TextStyle(fontSize: 16),
                                         ),
                                         if (customiseData != null)
                                           Text(
@@ -108,15 +118,15 @@ class _SettingsState extends State<Settings> {
                                     ),
                                   ],
                                 ),
-                                Icon(Icons.arrow_right_sharp, size: 30),
+                                Icon(Icons.arrow_forward_ios_rounded, size: 20),
                               ],
                             ),
                           ),
                         ),
                         Container(
-                          height: 80,
+                          height: 68,
                           padding: EdgeInsets.symmetric(horizontal: 10),
-                          color: Colors.grey[50],
+
                           child: InkWell(
                             onTap: () {
                               Navigator.of(context).push(
@@ -135,7 +145,7 @@ class _SettingsState extends State<Settings> {
                                   children: [
                                     Icon(
                                       Icons.location_city_rounded,
-                                      size: 30,
+                                      size: 22,
                                       color: Colors.amber,
                                     ),
                                     Column(
@@ -146,23 +156,26 @@ class _SettingsState extends State<Settings> {
                                       children: [
                                         Text(
                                           body.data![2],
-                                          style: TextStyle(fontSize: 20),
+                                          style: TextStyle(fontSize: 16),
                                         ),
                                         if (customiseData != null)
-                                          Text(customiseData!["state"]),
+                                          Text(
+                                            customiseData!["state"],
+                                            style: TextStyle(fontSize: 14),
+                                          ),
                                       ],
                                     ),
                                   ],
                                 ),
-                                Icon(Icons.arrow_right_sharp, size: 30),
+                                Icon(Icons.arrow_forward_ios_rounded, size: 20),
                               ],
                             ),
                           ),
                         ),
                         Container(
-                          height: 80,
+                          height: 68,
                           padding: EdgeInsets.symmetric(horizontal: 10),
-                          color: Colors.grey[50],
+
                           child: InkWell(
                             onTap: () {
                               DatabaseHelper.instance.queryAllCustomise().then((
@@ -187,7 +200,7 @@ class _SettingsState extends State<Settings> {
                                   children: [
                                     Icon(
                                       Icons.holiday_village,
-                                      size: 30,
+                                      size: 22,
                                       color: Colors.amber,
                                     ),
                                     Column(
@@ -198,22 +211,25 @@ class _SettingsState extends State<Settings> {
                                       children: [
                                         Text(
                                           body.data![3],
-                                          style: TextStyle(fontSize: 20),
+                                          style: TextStyle(fontSize: 16),
                                         ),
-                                        Text(customiseData!["district"]),
+                                        Text(
+                                          customiseData!["district"],
+                                          style: TextStyle(fontSize: 14),
+                                        ),
                                       ],
                                     ),
                                   ],
                                 ),
-                                Icon(Icons.arrow_right_sharp, size: 30),
+                                Icon(Icons.arrow_forward_ios_rounded, size: 20),
                               ],
                             ),
                           ),
                         ),
                         Container(
-                          height: 80,
+                          height: 68,
                           padding: EdgeInsets.symmetric(horizontal: 10),
-                          color: Colors.grey[50],
+
                           child: InkWell(
                             onTap: () {
                               Navigator.of(context).push(
@@ -232,16 +248,16 @@ class _SettingsState extends State<Settings> {
                                   children: [
                                     Icon(
                                       Icons.list_alt_outlined,
-                                      size: 30,
+                                      size: 22,
                                       color: Colors.amber,
                                     ),
                                     Text(
                                       body.data![4],
-                                      style: TextStyle(fontSize: 20),
+                                      style: TextStyle(fontSize: 16),
                                     ),
                                   ],
                                 ),
-                                Icon(Icons.arrow_right_sharp, size: 30),
+                                Icon(Icons.arrow_forward_ios_rounded, size: 20),
                               ],
                             ),
                           ),
@@ -250,13 +266,18 @@ class _SettingsState extends State<Settings> {
                     ),
                   ),
                 ],
-              );
-            } else {
-              return Center(child: Image.asset("assets/images/spinner.gif"));
-            }
-          },
-        ),
-      ),
+              ),
+            ),
+          );
+        } else {
+          return Scaffold(
+            backgroundColor: Color(0xffffffff),
+            body: SafeArea(
+              child: Center(child: Image.asset("assets/images/spinner.gif")),
+            ),
+          );
+        }
+      },
     );
   }
 }

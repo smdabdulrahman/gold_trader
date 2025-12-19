@@ -20,6 +20,17 @@ class Soldproductsdbhelper {
     return products;
   }
 
+  static Future<List<SoldProducts>> queryAllProducts() async {
+    Database db = await DatabaseHelper.instance.db;
+    List<Map<String, dynamic>> ls = await db.query('sold_products');
+
+    List<SoldProducts> products = [];
+    for (var element in ls) {
+      products.add(SoldProducts.fromMap(element));
+    }
+    return products;
+  }
+
   static Future<int> insertProducts(SoldProducts sold_products) async {
     Database db = await DatabaseHelper.instance.db;
     return await db.insert('sold_products', sold_products.toMap());

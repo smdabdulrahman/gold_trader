@@ -40,26 +40,65 @@ class PrintHelper {
     return images;
   }
 
-  static Future<void> print80mmBill(File pdf, String printer_name) async {
+  static void showErrorSnackBar(String txt, BuildContext context) {
+    HapticFeedback.heavyImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(txt, style: TextStyle(color: Colors.white)),
+        action: SnackBarAction(label: "OK", onPressed: () {}),
+        backgroundColor: Colors.red[800],
+      ),
+    );
+  }
+
+  static void showSuccessSnackBar(String txt, BuildContext context) {
+    HapticFeedback.heavyImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(txt, style: TextStyle(color: Colors.white)),
+        action: SnackBarAction(label: "OK", onPressed: () {}),
+        backgroundColor: Colors.green[800],
+      ),
+    );
+  }
+
+  static void showInfoSnackBar(String txt, BuildContext context) {
+    HapticFeedback.heavyImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(txt, style: TextStyle(color: Colors.white)),
+        action: SnackBarAction(label: "OK", onPressed: () {}),
+        backgroundColor: Colors.blue[800],
+      ),
+    );
+  }
+
+  static Future<void> print80mmBill(
+    File pdf,
+    String printer_name,
+    BuildContext context,
+  ) async {
     final profile = await CapabilityProfile.load();
     final generator = Generator(PaperSize.mm80, profile);
 
     if (await PrintBluetoothThermal.isPermissionBluetoothGranted) {
       if (await PrintBluetoothThermal.bluetoothEnabled) {
         String? printer_mac;
-
+        showInfoSnackBar("Searching Printer...", context);
         //getting mac address of the printer
         (await PrintBluetoothThermal.pairedBluetooths).forEach((e) {
           if (e.name == printer_name) {
             printer_mac = e.macAdress;
           }
+          print(e.name);
         });
         if (printer_mac == null) {
-          print("Printer is not paired");
+          showErrorSnackBar("Printer is not paired", context);
           return;
         }
         if (await PrintBluetoothThermal.connectionStatus) {
           print("connected printing..");
+          showInfoSnackBar("Printing...", context);
           // PrintBluetoothThermal.writeBytes(
           //File(Filehelper.dir.path + "/bill_no_19.pdf").readAsBytesSync(),
           // );
@@ -68,6 +107,7 @@ class PrintHelper {
 
           PrintBluetoothThermal.writeBytes(generator.image(decodeImage(imgg)!));
           PrintBluetoothThermal.writeBytes(generator.cut());
+          showSuccessSnackBar("Printed", context);
           // Add some line feeds (important)
 
           /*   PrintBluetoothThermal.writeString(
@@ -82,19 +122,22 @@ class PrintHelper {
           ) async {
             if (val) {
               Uint8List imgg = (await convertPdfToImages(pdf))[0];
-
+              showInfoSnackBar("Printing...", context);
               PrintBluetoothThermal.writeBytes(
                 generator.image(decodeImage(imgg)!),
               );
               PrintBluetoothThermal.writeBytes(generator.cut());
+              showSuccessSnackBar("Printed", context);
+            } else {
+              showErrorSnackBar("Printer is Offline", context);
             }
           });
         }
       } else {
-        print("bluetooth is not enabled");
+        showErrorSnackBar("Turn ON Bluetooth", context);
       }
     } else {
-      print("not granted");
+      showErrorSnackBar("Allow Permission for Bluetooth", context);
       askPermission();
     }
   }

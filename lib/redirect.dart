@@ -42,7 +42,7 @@ class _RedirectState extends State<Redirect> {
     return Scaffold(
       backgroundColor: Color(0xffffffff),
 
-      body: Center(child: Image.asset("assets/images/spinner.gif")),
+      body: Center(child: Image.asset("assets/images/spinner.gif", width: 80)),
     );
   }
 }

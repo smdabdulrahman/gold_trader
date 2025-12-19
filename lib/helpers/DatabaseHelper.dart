@@ -5,6 +5,8 @@ import 'package:goldtrader/model/Shop.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import '../model/Customise.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._instance();
@@ -21,7 +23,15 @@ class DatabaseHelper {
     String databasesPath = await getDatabasesPath();
     String path = join(databasesPath, 'goldtrader.db');
 
-    return await openDatabase(path, version: 1, onCreate: _onCreate);
+    return await openDatabase(
+      path,
+      version: 1,
+      onConfigure: (db) async {
+        // Must enable foreign keys
+        await db.execute("PRAGMA foreign_keys = ON");
+      },
+      onCreate: _onCreate,
+    );
   }
 
   Future _onCreate(Database db, int version) async {
@@ -90,7 +100,7 @@ class DatabaseHelper {
         final_amount INTEGER,
         customer_id INTEGER,
         count INTEGER,
-        FOREIGN KEY(customer_id) REFERENCES customer(id) ON DELETE SET NULL
+        FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE SET NULL
       )
     ''');
 
@@ -222,6 +232,7 @@ class DatabaseHelper {
     Database db = await instance.db;
     return await db.delete("products", where: 'id = ?', whereArgs: [id]);
   }
+
   /* Future<int> updateLocale(String locale) async {
     Database db = await instance.db;
     return await db.update(
@@ -235,6 +246,99 @@ class DatabaseHelper {
     Database db = await instance.db;
     return await db.delete('nova_Customises', where: 'id = ?', whereArgs: [id]);
   } */
+  void showSuccessSnackBar(String txt, BuildContext context) {
+    HapticFeedback.heavyImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(txt, style: TextStyle(color: Colors.white)),
+        action: SnackBarAction(label: "OK", onPressed: () {}),
+        backgroundColor: Colors.green[800],
+      ),
+    );
+  }
+
+  void showErrorSnackBar(String txt, BuildContext context) {
+    HapticFeedback.heavyImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(txt, style: TextStyle(color: Colors.white)),
+        action: SnackBarAction(label: "OK", onPressed: () {}),
+        backgroundColor: Colors.red[800],
+      ),
+    );
+  }
+
+  Future<bool> updatedGoldRate(BuildContext context) async {
+    await queryRates().then((val) async {
+      DateTime last_updated_time = DateTime.now();
+      if (!val.isEmpty) {
+        last_updated_time = DateTime.tryParse(val[0]["last_updated_time"])!;
+      }
+      DateTime now = DateTime.now();
+      if (val.isEmpty) {
+        Map<String, double> rates = await GetRate.goldAndSilver();
+        if (rates["gold"] == 0) {
+          print("Unable to update rates");
+          await insertRates(
+            Rates(
+              gold: 0,
+              silver: 0,
+              last_updated_time: DateTime.now()
+                  .subtract(Duration(days: 1))
+                  .toIso8601String(),
+            ),
+          );
+          showErrorSnackBar(
+            "Network Error , Unable to update gold rate",
+            context,
+          );
+          return false;
+        } else {
+          showSuccessSnackBar(
+            "Sucessfully updated today gold and silver rate",
+            context,
+          );
+        }
+        await insertRates(
+          Rates(
+            gold: rates["gold"]!,
+            silver: rates["silver"]!,
+            last_updated_time: rates["gold"] == 0
+                ? DateTime.now().subtract(Duration(days: 1)).toIso8601String()
+                : DateTime.now().toIso8601String(),
+          ),
+        );
+        return true;
+      } else if ((last_updated_time.day != now.day) ||
+          (last_updated_time.month != now.month) ||
+          (last_updated_time.year != now.year)) {
+        print("new rate updated");
+        Map<String, double> rates = await GetRate.goldAndSilver();
+        if (rates["gold"] == 0) {
+          print("Unable to update rates");
+          showErrorSnackBar(
+            "Network Error , Unable to update gold rate",
+            context,
+          );
+          return false;
+        }
+        showSuccessSnackBar(
+          "Sucessfully updated today gold and silver rate",
+          context,
+        );
+        await updateRates(
+          Rates(
+            id: 1,
+            gold: rates['gold']!,
+            silver: rates["silver"]!,
+            last_updated_time: DateTime.now().toIso8601String(),
+          ),
+        );
+        return true;
+      }
+    });
+    return false;
+  }
 
   Future<void> initializeCustomises() async {
     if ((await queryAllCustomise()).isEmpty) {
@@ -246,38 +350,5 @@ class DatabaseHelper {
         await insertCustomise(cust);
       }
     }
-    await queryRates().then((val) async {
-      DateTime last_updated_time = DateTime.now();
-      if (!val.isEmpty) {
-        last_updated_time = DateTime.tryParse(val[0]["last_updated_time"])!;
-      }
-      DateTime now = DateTime.now();
-      if (val.isEmpty) {
-        Map<String, double> rates = await GetRate.goldAndSilver();
-
-        insertRates(
-          Rates(
-            gold: rates["gold"]!,
-            silver: rates["silver"]!,
-            last_updated_time: DateTime.now().toIso8601String(),
-          ),
-        ).then((val) {
-          print(val);
-        });
-      } else if ((last_updated_time.day != now.day) ||
-          (last_updated_time.month != now.month) ||
-          (last_updated_time.year != now.year)) {
-        print("new rate updated");
-        Map<String, double> rates = await GetRate.goldAndSilver();
-        updateRates(
-          Rates(
-            id: 1,
-            gold: rates['gold']!,
-            silver: rates["silver"]!,
-            last_updated_time: DateTime.now().toIso8601String(),
-          ),
-        );
-      }
-    });
   }
 }

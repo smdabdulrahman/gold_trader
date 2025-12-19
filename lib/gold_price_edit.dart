@@ -3,6 +3,7 @@ import 'package:goldtrader/helpers/DatabaseHelper.dart';
 import 'package:goldtrader/helpers/TranslateHelper.dart';
 import 'package:goldtrader/dashboard.dart';
 import 'package:goldtrader/model/Rates.dart';
+import 'package:intl/intl.dart';
 import 'package:sqflite/sqlite_api.dart';
 
 class GoldPriceEdit extends StatefulWidget {
@@ -43,10 +44,15 @@ class _GoldPriceEditState extends State<GoldPriceEdit> {
     TextEditingController silverRate = TextEditingController(
       text: widget.silverRate.toString(),
     );
+    final f = NumberFormat.decimalPattern('en_IN');
+    String roundAndFormat(double n) {
+      double r = (n * 100).round() / 100; // 4 decimals → 2 decimals
+      return f.format(r); // Indian format
+    }
 
     return Scaffold(
-      backgroundColor: Color(0xffffffff),
-      appBar: AppBar(),
+      backgroundColor: Color.fromARGB(246, 255, 255, 255),
+      appBar: AppBar(backgroundColor: Colors.amber[400]),
       body: SafeArea(
         child: Center(
           child: FutureBuilder(
@@ -61,6 +67,148 @@ class _GoldPriceEditState extends State<GoldPriceEdit> {
 
                     children: [
                       Text(body.data![0], style: TextStyle(fontSize: 25)),
+                      /*    Column(
+                        spacing: 20,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(3),
+                            alignment: Alignment.center,
+                            width: 150,
+                            height: 155,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              spacing: 5,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  children: [
+                                    Text(
+                                      "Gold",
+                                      style: TextStyle(
+                                        color: Colors.grey[700],
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Image.asset(
+                                      opacity: AlwaysStoppedAnimation(.8),
+                                      "assets/images/coins.png",
+                                      width: 50,
+                                    ),
+                                  ],
+                                ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      alignment: Alignment.topLeft,
+                                      child: Text("₹ "),
+                                    ),
+                                    SizedBox(
+                                      width: 100,
+                                      child: TextFormField(
+                                        controller: goldRate,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 22,
+                                        ),
+                                        decoration: InputDecoration(
+                                          border: InputBorder.none,
+
+                                          focusedBorder: InputBorder.none,
+                                        ),
+                                      ),
+                                    ),
+
+                                    Text(
+                                      " /g",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Padding(padding: EdgeInsets.all(2)),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: EdgeInsets.all(3),
+                            alignment: Alignment.center,
+                            width: 150,
+                            height: 155,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              spacing: 5,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  children: [
+                                    Text(
+                                      "Silver",
+                                      style: TextStyle(
+                                        color: Colors.grey[700],
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Image.asset(
+                                      opacity: AlwaysStoppedAnimation(.8),
+                                      "assets/images/silver_coin.png",
+                                      width: 45,
+                                    ),
+                                  ],
+                                ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      alignment: Alignment.topLeft,
+                                      child: Text("₹ "),
+                                    ),
+                                    SizedBox(
+                                      width: 100,
+                                      child: TextFormField(
+                                        controller: silverRate,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 22,
+                                        ),
+                                        decoration: InputDecoration(
+                                          border: InputBorder.none,
+
+                                          focusedBorder: InputBorder.none,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      " /g",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Padding(padding: EdgeInsets.all(2)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ), */
                       Container(
                         width: 250,
                         child: Column(

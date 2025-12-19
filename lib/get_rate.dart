@@ -3,22 +3,27 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class GetRate {
-  static String API_KEY = "QGU1L9DCLXPZNTPSGXC0751PSGXC0";
   static Future<Map<String, double>> goldAndSilver() async {
-    final response = await http.get(
-      Uri.parse(
-        "https://api.metals.dev/v1/metal/authority?api_key=QGU1L9DCLXPZNTPSGXC0751PSGXC0&authority=mcx&currency=INR&unit=g",
-      ),
-    );
-    if (response.statusCode == 200) {
-      Map<String, dynamic> res =
-          jsonDecode(response.body) as Map<String, dynamic>;
-      print(res["rates"]["mcx_silver"]);
-      return {
-        "gold": res["rates"]["mcx_gold"],
-        "silver": res["rates"]["mcx_silver"],
-      };
+    try {
+      final response = await http
+          .get(
+            Uri.parse(
+              "https://goldrate.buypapps.com/Gold-Rate-List/?format=json",
+            ),
+          )
+          .timeout(Duration(seconds: 4));
+
+      if (response.statusCode == 200) {
+        List<dynamic> res = jsonDecode(response.body) as List<dynamic>;
+        double goldRate = double.parse(res[0]["gold_22k"]);
+        double silverRate = double.parse(res[0]["silver_1g"]);
+
+        return {"gold": goldRate, "silver": silverRate};
+      }
+      return {"gold": 0, "silver": 0};
+    } catch (e) {
+      print(e);
+      return {"gold": 0, "silver": 0};
     }
-    return {"gold": 4, "silver": 3};
   }
 }
